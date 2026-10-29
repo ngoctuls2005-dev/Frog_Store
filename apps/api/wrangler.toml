@@ -8,14 +8,12 @@ directory = "../web/dist"
 not_found_handling = "single-page-application"
 run_worker_first = ["/api/*"]
 
-# Tạo thật khi deploy:
-#   npx wrangler d1 create store-db      -> điền database_id
-#   npx wrangler kv namespace create CART -> điền id
+# Cloudflare D1 Database & KV Namespace
 [[d1_databases]]
 binding = "DB"
 database_name = "store-db"
-database_id = "d7d6e6dd-5bfa-4e71-a6bd-dd6bb85c7255"
+database_id = "691b9a4c-273f-41c1-ab89-bc4162699b20"
 
 [[kv_namespaces]]
 binding = "CART"
-id = "40add3e30708404f8e8dcde8fc0c5d28"
+id = "26c77d60e71c40f491909c57983215d8"

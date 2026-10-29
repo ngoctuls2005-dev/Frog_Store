@@ -9,3 +9,6 @@ dist
 .claude
 .vscode
 .idea
+__pycache__
+*.pyc
+*.pyo

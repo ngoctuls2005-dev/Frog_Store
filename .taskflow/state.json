@@ -1,0 +1,994 @@
+{
+  "project": "Frog Store - Auth & Admin RBAC",
+  "goal": "Xay dung he thong Tai khoan, Phan quyen RBAC (Khach hang & Admin), Bao toan gio hang khi dang xuat, Trang quan tri chuyen sau va deploy len Cloudflare",
+  "created_at": "2026-10-28T15:18:00Z",
+  "updated_at": "2026-10-29T07:14:07Z",
+  "tasks": [
+    {
+      "id": "AUTH-01",
+      "title": "Cai tien CSDL cho Users, User Carts va Orders user_id",
+      "status": "VERIFIED",
+      "accept": [
+        "Co bang users voi salt/hash PBKDF2",
+        "Co bang user_carts",
+        "Bang orders co cot user_id",
+        "Co seed admin mac dinh"
+      ],
+      "tests": [
+        "python tests/verify_auth_db.py"
+      ],
+      "manual": [],
+      "depends": [],
+      "notes": [
+        {
+          "timestamp": "2026-10-28T08:20:19Z",
+          "why": "Cai tien CSDL he thong phan quyen User va Admin",
+          "change": "Them bang users (hash/salt PBKDF2), bang user_carts de giu gio hang khi logout, cap nhat orders co user_id, va seed tai khoan admin@frogstore.vn"
+        }
+      ],
+      "diagnoses": [],
+      "verification": {
+        "timestamp": "2026-10-28T08:20:27Z",
+        "test_results": [
+          {
+            "command": "python tests/verify_auth_db.py",
+            "returncode": 0,
+            "passed": true,
+            "stdout": "PASS: Verified schema and seed with users, user_carts, and orders user_id!\n",
+            "stderr": ""
+          }
+        ],
+        "manual_evidence": null
+      }
+    },
+    {
+      "id": "AUTH-02",
+      "title": "Xay dung module bao mat Web Crypto (PBKDF2 + JWT + RBAC Middleware)",
+      "status": "VERIFIED",
+      "accept": [
+        "Hash password voi salt 16 bytes",
+        "Sign va verify JWT HS256",
+        "Middleware requireAdmin va requireCustomer chan 401/403 dung chuan"
+      ],
+      "tests": [
+        "python tests/verify_auth_crypto.py"
+      ],
+      "manual": [],
+      "depends": [
+        "AUTH-01"
+      ],
+      "notes": [
+        {
+          "timestamp": "2026-10-28T08:23:03Z",
+          "why": "Xay dung module bao mat Web Crypto API tren Cloudflare Workers",
+          "change": "Trien khai apps/api/src/auth.ts: generateSalt, hashPassword bang PBKDF2 (100.000 vong), verifyPassword timing-safe, signJwt va verifyJwt HS256, getAuthUser middleware. Typecheck 0 loi va test verify_auth_crypto dat PASS"
+        }
+      ],
+      "diagnoses": [],
+      "verification": {
+        "timestamp": "2026-10-28T08:23:31Z",
+        "test_results": [
+          {
+            "command": "python tests/verify_auth_crypto.py",
+            "returncode": 0,
+            "passed": true,
+            "stdout": "PASS: Verified Web Crypto PBKDF2 hashing, timing-safe verification, and JWT HS256 tokens!\n",
+            "stderr": ""
+          }
+        ],
+        "manual_evidence": null
+      }
+    },
+    {
+      "id": "AUTH-03",
+      "title": "Xay dung API Khach hang va Dong bo gio hang theo tai khoan",
+      "status": "VERIFIED",
+      "accept": [
+        "API register/login/me",
+        "API user profile/password/orders",
+        "Dong bo gio hang tu user_carts va khong bi mat khi logout"
+      ],
+      "tests": [
+        "python tests/verify_customer_api.py"
+      ],
+      "manual": [],
+      "depends": [
+        "AUTH-02"
+      ],
+      "notes": [
+        {
+          "timestamp": "2026-10-28T08:26:12Z",
+          "why": "Xay dung API Khach hang va dong bo gio hang theo tai khoan",
+          "change": "Them routes /auth/register, /auth/login, /auth/me, /user/profile, /user/password, /user/orders, /user/orders/:code/cancel. Dong bo gio hang vao bang user_carts de giu nguyen khi logout, merge gio hang guest khi login"
+        }
+      ],
+      "diagnoses": [],
+      "verification": {
+        "timestamp": "2026-10-28T08:26:53Z",
+        "test_results": [
+          {
+            "command": "python tests/verify_customer_api.py",
+            "returncode": 0,
+            "passed": true,
+            "stdout": "PASS: Verified customer authentication and persistent cart routes!\n",
+            "stderr": ""
+          }
+        ],
+        "manual_evidence": null
+      }
+    },
+    {
+      "id": "AUTH-04",
+      "title": "Xay dung API Quan tri Admin (Stats, CRUD ech canh, Orders, Users)",
+      "status": "VERIFIED",
+      "accept": [
+        "API /api/admin/stats",
+        "CRUD /api/admin/products",
+        "Status /api/admin/orders/:id/status",
+        "Chan 403 voi non-admin"
+      ],
+      "tests": [
+        "python tests/verify_admin_api.py"
+      ],
+      "manual": [],
+      "depends": [
+        "AUTH-02"
+      ],
+      "notes": [
+        {
+          "timestamp": "2026-10-28T08:28:31Z",
+          "why": "Cung cap bo API quan tri toan dien cho Admin voi RBAC middleware, phan chia bao mat nghiem ngat va quan ly van hanh 16 loai ech cung don hang live pets",
+          "change": "Them requireAdmin middleware va 9 RESTful endpoints: /admin/stats, CRUD /admin/products, quan ly don hang va status /admin/orders/:id/status, quan ly khach hang /admin/users/:id/status"
+        }
+      ],
+      "diagnoses": [],
+      "verification": {
+        "timestamp": "2026-10-28T08:28:37Z",
+        "test_results": [
+          {
+            "command": "python tests/verify_admin_api.py",
+            "returncode": 0,
+            "passed": true,
+            "stdout": "PASS: Verified Admin portal routes, RBAC protection, and live pet fulfillment endpoints!\n",
+            "stderr": ""
+          }
+        ],
+        "manual_evidence": null
+      }
+    },
+    {
+      "id": "AUTH-05",
+      "title": "Nang cap Frontend UI Khach hang (Auth Modal, My Orders, Account Menu)",
+      "status": "VERIFIED",
+      "accept": [
+        "Modal Dang nhap/Dang ky",
+        "Menu tai khoan",
+        "Modal Don mua cua toi co nut huy",
+        "Bao toan gio hang khi logout/login"
+      ],
+      "tests": [
+        "python tests/verify_frontend_auth.py"
+      ],
+      "manual": [],
+      "depends": [
+        "AUTH-03"
+      ],
+      "notes": [
+        {
+          "timestamp": "2026-10-28T08:34:06Z",
+          "why": "Hoan thien UI Khach hang cho phep Dang nhap / Dang ky tai khoan, bao toan gio hang khi logout, quan ly va huy don ca nhan",
+          "change": "Cap nhat api.ts voi ham auth/orders/token; them Auth Modal (chuyen tab login/register + demo creds), Modal Don mua cua toi, header user pill va co che bao toan du lieu gio hang"
+        }
+      ],
+      "diagnoses": [],
+      "verification": {
+        "timestamp": "2026-10-28T08:34:11Z",
+        "test_results": [
+          {
+            "command": "python tests/verify_frontend_auth.py",
+            "returncode": 0,
+            "passed": true,
+            "stdout": "PASS: Verified customer frontend authentication, profile and order management!\n",
+            "stderr": ""
+          }
+        ],
+        "manual_evidence": null
+      }
+    },
+    {
+      "id": "AUTH-06",
+      "title": "Xay dung Giao dien Bang Quan tri Admin Portal chuyen sau",
+      "status": "VERIFIED",
+      "accept": [
+        "Dashboard 4 chi so thong ke",
+        "Bang CRUD san pham ech canh",
+        "Bang xu ly don hang live pets",
+        "Bang quan ly khach hang"
+      ],
+      "tests": [
+        "python tests/verify_admin_ui.py"
+      ],
+      "manual": [],
+      "depends": [
+        "AUTH-04",
+        "AUTH-05"
+      ],
+      "notes": [
+        {
+          "timestamp": "2026-10-28T08:35:26Z",
+          "why": "Cung cap bang quan tri Admin Portal day du chuc nang giup quan ly 16 loai ech, don hang live pets va nguoi dung voi RBAC nghiem ngat",
+          "change": "Xay dung AdminPortal.tsx gom 4 tab (Tong quan KPI, Quan ly ech canh CRUD voi thong so sinh hoc, Quan ly don hang live pets va trang thai, Quan ly phan quyen nguoi dung); tich hop vao App.tsx voi nut khoa admin va kiem tra quyen role === admin"
+        }
+      ],
+      "diagnoses": [],
+      "verification": {
+        "timestamp": "2026-10-28T08:35:31Z",
+        "test_results": [
+          {
+            "command": "python tests/verify_admin_ui.py",
+            "returncode": 0,
+            "passed": true,
+            "stdout": "PASS: Verified Admin Portal UI, biological CRUD, order status flow and RBAC protections!\n",
+            "stderr": ""
+          }
+        ],
+        "manual_evidence": null
+      }
+    },
+    {
+      "id": "AUTH-07",
+      "title": "Dong bo D1 Remote, Build, Deploy len Cloudflare Wrangler va Nghiem thu URL",
+      "status": "VERIFIED",
+      "accept": [
+        "D1 remote execute thanh cong",
+        "npm run build va typecheck 0 loi",
+        "Deploy thanh cong len workers.dev",
+        "Kiem thu live auth & admin"
+      ],
+      "tests": [
+        "python tests/verify_auth_deploy.py"
+      ],
+      "manual": [],
+      "depends": [
+        "AUTH-06"
+      ],
+      "notes": [
+        {
+          "timestamp": "2026-10-28T08:41:07Z",
+          "why": "Trien khai toan dien he thong Auth & RBAC & Admin Portal len Cloudflare production va kiem chung nghiem thu end-to-end",
+          "change": "Khoi tao schema va seed moi len D1 remote; build bundle web va worker; deploy thanh cong len Wrangler; chay bo test verify_auth_deploy.py kiem chung catalog, login khach hang, login admin, chan 403 RBAC, persistent cart va quy trinh don hang"
+        }
+      ],
+      "diagnoses": [],
+      "verification": {
+        "timestamp": "2026-10-28T08:41:17Z",
+        "test_results": [
+          {
+            "command": "python tests/verify_auth_deploy.py",
+            "returncode": 0,
+            "passed": true,
+            "stdout": "1. Testing Public Products Catalog...\n   -> OK: 16 species returned.\n2. Testing Customer Login (khachhang@gmail.com)...\n   -> OK: Customer token obtained. Role: customer\n3. Testing RBAC Protection: Customer accessing Admin endpoint (/api/admin/stats)...\n   -> OK: Properly blocked with 403 Forbidden!\n4. Testing Admin Login (admin@frogstore.vn)...\n   -> OK: Admin token obtained. Role: admin\n5. Testing Admin Stats Access with Admin Token...\n   -> OK: Admin stats verified! Products: 16, Users: 1\n6. Testing Cart Preservation Across Logout/Login...\n   -> OK: Cart retained in D1 database across logout/login!\n\nALL PRODUCTION VERIFICATIONS PASSED!\n",
+            "stderr": ""
+          }
+        ],
+        "manual_evidence": null
+      }
+    },
+    {
+      "id": "AUTH-G01",
+      "title": "Cai tien CSDL D1 cho Google OAuth, Avatar va Toa do GPS",
+      "status": "VERIFIED",
+      "accept": [
+        "Co google_id (UNIQUE), avatar_url, latitude, longitude trong users va orders"
+      ],
+      "tests": [
+        "python tests/verify_g01_schema.py"
+      ],
+      "manual": [],
+      "depends": [
+        "AUTH-07"
+      ],
+      "notes": [
+        {
+          "timestamp": "2026-10-28T08:56:26Z",
+          "why": "Mo rong CSDL de luu tru Google ID duy nhat, anh avatar va toa do GPS giao hang hhoa toc",
+          "change": "Cap nhat apps/api/schema.sql va seed.sql: bo sung google_id (UNIQUE index), avatar_url, latitude, longitude trong users va orders; re-init local D1 thanh cong"
+        }
+      ],
+      "diagnoses": [],
+      "verification": {
+        "timestamp": "2026-10-28T08:56:38Z",
+        "test_results": [
+          {
+            "command": "python tests/verify_g01_schema.py",
+            "returncode": 0,
+            "passed": true,
+            "stdout": "PASS: Verified schema and local D1 columns for Google OAuth, Avatar, and GPS location!\n",
+            "stderr": ""
+          }
+        ],
+        "manual_evidence": null
+      }
+    },
+    {
+      "id": "AUTH-G02",
+      "title": "Backend API Google Auth va Rang buoc Lien ket 1-1",
+      "status": "VERIFIED",
+      "accept": [
+        "API /auth/google, /user/link-google, /user/unlink-google va chan 409 khi trung Google ID"
+      ],
+      "tests": [
+        "python tests/verify_g02_google_api.py"
+      ],
+      "manual": [],
+      "depends": [
+        "AUTH-G01"
+      ],
+      "notes": [
+        {
+          "timestamp": "2026-10-28T08:59:10Z",
+          "why": "Xay dung backend endpoints dang nhap, dang ky va lien ket tai khoan Google voi rang buoc doc quyen 1-1",
+          "change": "Them /auth/google, /user/link-google, /user/unlink-google; them parseGoogleToken trong auth.ts; chan 409 khi google_id da duoc lien ket boi tai khoan khac"
+        }
+      ],
+      "diagnoses": [],
+      "verification": {
+        "timestamp": "2026-10-28T08:59:14Z",
+        "test_results": [
+          {
+            "command": "python tests/verify_g02_google_api.py",
+            "returncode": 0,
+            "passed": true,
+            "stdout": "PASS: Verified Google OAuth, 1-1 account linking constraints, and unlinking safeguards!\n",
+            "stderr": ""
+          }
+        ],
+        "manual_evidence": null
+      }
+    },
+    {
+      "id": "AUTH-G03",
+      "title": "Backend Bat buoc Dang nhap khi Dat hang va Ghi nhan Toa do GPS",
+      "status": "VERIFIED",
+      "accept": [
+        "POST /orders chan 401 neu chua dang nhap; luu latitude va longitude vao don hang"
+      ],
+      "tests": [
+        "python tests/verify_g03_order_auth_gps.py"
+      ],
+      "manual": [],
+      "depends": [
+        "AUTH-G02"
+      ],
+      "notes": [
+        {
+          "timestamp": "2026-10-28T09:00:59Z",
+          "why": "Chan khach vang lai dat hang, bat buoc dang nhap de bao dam quyen loi bao hanh song 100%, dong thoi luu toa do GPS giao hang",
+          "change": "Cap nhat POST /orders tra ve 401 AUTH_REQUIRED neu chua dang nhap; them cot va bind latitude, longitude vao don hang va tu dong luu toa do mac dinh cho nguoi dung"
+        }
+      ],
+      "diagnoses": [],
+      "verification": {
+        "timestamp": "2026-10-28T09:01:03Z",
+        "test_results": [
+          {
+            "command": "python tests/verify_g03_order_auth_gps.py",
+            "returncode": 0,
+            "passed": true,
+            "stdout": "PASS: Verified mandatory customer authentication on order creation and GPS coordinates persistence!\n",
+            "stderr": ""
+          }
+        ],
+        "manual_evidence": null
+      }
+    },
+    {
+      "id": "AUTH-G04",
+      "title": "Frontend UI Quan ly Ho so Ca nhan va Lien ket Google",
+      "status": "VERIFIED",
+      "accept": [
+        "Modal Ho so ca nhan, nut Dang nhap Google SVG, trang thai lien ket va doi mat khau"
+      ],
+      "tests": [
+        "python tests/verify_g04_profile_ui.py"
+      ],
+      "manual": [],
+      "depends": [
+        "AUTH-G03"
+      ],
+      "notes": [
+        {
+          "timestamp": "2026-10-28T09:08:01Z",
+          "why": "Cung cap giao dien Ho so ca nhan, nut Dang nhap Google SVG chuan va lien ket tai khoan Google truc quan",
+          "change": "Xay dung ProfileModal.tsx voi 2 tab (Thong tin ca nhan, Lien ket Google va doi mat khau); tich hop Google Sign-In button vao Auth modal; cap nhat api.ts cac ham link/unlink Google"
+        }
+      ],
+      "diagnoses": [],
+      "verification": {
+        "timestamp": "2026-10-28T09:08:07Z",
+        "test_results": [
+          {
+            "command": "python tests/verify_g04_profile_ui.py",
+            "returncode": 0,
+            "passed": true,
+            "stdout": "PASS: Verified customer profile modal, Google Sign-In and account linking integration!\n",
+            "stderr": ""
+          }
+        ],
+        "manual_evidence": null
+      }
+    },
+    {
+      "id": "AUTH-G05",
+      "title": "Frontend Quet Vi tri Nguoi dung (GPS & Reverse Geocoding)",
+      "status": "VERIFIED",
+      "accept": [
+        "Nut Quet GPS tai Checkout va Profile, tu dong dien dia chi tieng Viet, luu toa do"
+      ],
+      "tests": [
+        "python tests/verify_g05_geolocation.py"
+      ],
+      "manual": [],
+      "depends": [
+        "AUTH-G04"
+      ],
+      "notes": [
+        {
+          "timestamp": "2026-10-28T09:08:32Z",
+          "why": "Tich hop kha nang quet vi tri GPS tu thiet bi nguoi dung de lay toa do va dia chi chinh xac cho van chuyen live pets",
+          "change": "Them handleScanGpsLocation va handleGetLocation su dung HTML5 Geolocation API, reverse geocoding tu dong phan tich dia chi tieng Viet va hien thi huy hieu toa do"
+        }
+      ],
+      "diagnoses": [],
+      "verification": {
+        "timestamp": "2026-10-28T09:08:37Z",
+        "test_results": [
+          {
+            "command": "python tests/verify_g05_geolocation.py",
+            "returncode": 0,
+            "passed": true,
+            "stdout": "PASS: Verified device GPS scanning, reverse geocoding, and location binding in Checkout and Profile!\n",
+            "stderr": ""
+          }
+        ],
+        "manual_evidence": null
+      }
+    },
+    {
+      "id": "AUTH-G06",
+      "title": "Nang cap Toan dien UI/UX va Tich hop Google Maps trong Admin Portal",
+      "status": "VERIFIED",
+      "accept": [
+        "Bang mau Emerald/Orange, Toast notifications, Nut xem Google Maps trong AdminPortal"
+      ],
+      "tests": [
+        "python tests/verify_g06_ui_ux.py"
+      ],
+      "manual": [],
+      "depends": [
+        "AUTH-G05"
+      ],
+      "notes": [
+        {
+          "timestamp": "2026-10-28T09:09:32Z",
+          "why": "Cai thien toan dien UI/UX theo he thong ui_ux_pro_max gom bang mau Emerald/Orange, Toast alerts, the chan dat hang khi chua dang nhap va link Google Maps trong AdminPortal",
+          "change": "Cap nhat styles.css voi cac lop btn-google-login, toast-card, guest-lock-banner, btn-maps-link; cap nhat AdminPortal.tsx hien thi link Google Maps dan duong cho shipper; tich hop Toast notification vao App.tsx"
+        }
+      ],
+      "diagnoses": [],
+      "verification": {
+        "timestamp": "2026-10-28T09:09:38Z",
+        "test_results": [
+          {
+            "command": "python tests/verify_g06_ui_ux.py",
+            "returncode": 0,
+            "passed": true,
+            "stdout": "PASS: Verified UI/UX enhancements, toast alerts, order lock banner, and Google Maps integration in Admin Portal!\n",
+            "stderr": ""
+          }
+        ],
+        "manual_evidence": null
+      }
+    },
+    {
+      "id": "AUTH-G07",
+      "title": "Dong bo D1 Remote, Build, Deploy Wrangler va Nghiem thu Live URL",
+      "status": "VERIFIED",
+      "accept": [
+        "Schema Remote D1, build clean, deploy workers.dev, chay test E2E 7 yeu cau dat 100%"
+      ],
+      "tests": [
+        "python tests/verify_g07_production.py"
+      ],
+      "manual": [],
+      "depends": [
+        "AUTH-G06"
+      ],
+      "notes": [
+        {
+          "timestamp": "2026-10-28T09:15:31Z",
+          "why": "Xac nhan deploy thanh cong va chay bo kiem thu E2E tu dong verify_g07_production.py xac thuc toan dien 7 yeu cau tren production URL https://store.ngoctuls2005.workers.dev",
+          "change": "Chay verify_g07_production.py dat 7/7 tieu chi: 1. Chan khach vang lai (401), 2. Luu tru ho so day du GPS/Avatar, 3. Dang ky/Dang nhap Google, 4. Lien ket Google & dang nhap cheo, 5. Chan lien ket 1-1 (409), 6. Luu toa do GPS vao don hang, 7. UI/UX assets responsive"
+        }
+      ],
+      "diagnoses": [],
+      "verification": {
+        "timestamp": "2026-10-28T09:15:41Z",
+        "test_results": [
+          {
+            "command": "python tests/verify_g07_production.py",
+            "returncode": 0,
+            "passed": true,
+            "stdout": "--- YÊU CẦU 1: KHÔNG CHO ĐẶT HÀNG KHI CHƯA ĐĂNG NHẬP ---\n   -> OK: Đã chặn khách vãng lai đặt hàng với mã 401 Unauthorized!\n\n--- YÊU CẦU 2: TẠO TÀI KHOẢN MỚI & LƯU TRỮ HỒ SƠ TOÀN DIỆN ---\n   -> OK: Tạo tài khoản mới thành công (ID: 9, Email: frog.user.1793178935@test.vn)\n   -> OK: Hồ sơ cá nhân lưu trữ đầy đủ Tọa độ GPS và Avatar!\n\n--- YÊU CẦU 3: ĐĂNG NHẬP / ĐĂNG KÝ BẰNG GOOGLE ---\n   -> OK: Đăng ký & Đăng nhập tài khoản mới bằng Google thành công! (Google ID: google-sub-1793178935-new)\n\n--- YÊU CẦU 4: LIÊN KẾT TÀI KHOẢN GOOGLE & ĐĂNG NHẬP CHÉO ---\n   -> OK: Tài khoản email/pass đã liên kết thành công với Google!\n   -> OK: Đăng nhập chéo bằng Google trực tiếp vào tài khoản frog.user.1793178935@test.vn thành công!\n\n--- YÊU CẦU 5: RÀNG BUỘC DUY NHẤT 1-1 (CHẶN LIÊN KẾT NHIỀU TÀI KHOẢN BẰNG 1 GOOGLE ID) ---\n   -> OK: Hệ thống đã chặn thành công với mã 409 Conflict! 1 tài khoản Google chỉ được liên kết 1 tài khoản duy nhất.\n\n--- YÊU CẦU 6: QUÉT VỊ TRÍ GPS & LƯU TỌA ĐỘ VÀO ĐƠN HÀNG LIVE PETS ---\n   -> OK: Đơn hàng FROG-395407 đã được lưu với tọa độ GPS: 21.033333, 105.85\n   -> OK: Tra cứu đơn hàng hiển thị chính xác tọa độ GPS phục vụ giao nhận hỏa tốc!\n\n--- YÊU CẦU 7: KIỂM CHỨNG GIAO DIỆN UI/UX TRÊN PRODUCTION ASSETS ---\n   -> OK: Production UI/UX assets deployed and responsive.\n\n=====================================================================\nTẤT CẢ 7/7 YÊU CẦU ĐÃ VƯỢT QUA KIỂM THỬ TRÊN PRODUCTION WORKER!\n=====================================================================\n",
+            "stderr": ""
+          }
+        ],
+        "manual_evidence": null
+      }
+    },
+    {
+      "id": "DETAIL-01",
+      "title": "Cai tien CSDL D1 cho Ho so Chi Tiet va Toi uu AI",
+      "status": "VERIFIED",
+      "accept": [
+        "Bang products co slug va gallery; Bang frog_species_details co du thong so sinh hoc, ai_knowledge_snippet va ai_facts_json"
+      ],
+      "tests": [
+        "python tests/verify_detail_01_schema.py"
+      ],
+      "manual": [],
+      "depends": [],
+      "notes": [
+        {
+          "timestamp": "2026-10-28T09:35:51Z",
+          "why": "Mo rong CSDL D1 cho ho so ech chi tiet va toi uu AI doc/truy van",
+          "change": "Cap nhat apps/api/schema.sql: them cot slug, habitat_type, gallery_images_json vao bang products; tao bang frog_species_details voi 32 truong thong so dinh luong/dinh tinh, ai_knowledge_snippet Markdown va ai_facts_json; tao cac index idx_products_slug va idx_frog_details_product_id"
+        }
+      ],
+      "diagnoses": [],
+      "verification": {
+        "timestamp": "2026-10-28T09:35:57Z",
+        "test_results": [
+          {
+            "command": "python tests/verify_detail_01_schema.py",
+            "returncode": 0,
+            "passed": true,
+            "stdout": "   -> OK: Bang products co du cac cot 'slug', 'habitat_type', 'gallery_images_json'\n   -> OK: Bang frog_species_details co day du 32 cot thong so sinh hoc & AI facts\n   -> OK: Cac index idx_products_slug va idx_frog_details_product_id ton tai hop le\nKiểm chứng Task DETAIL-01 hoàn tất thành công 100%!\n",
+            "stderr": ""
+          }
+        ],
+        "manual_evidence": null
+      }
+    },
+    {
+      "id": "DETAIL-02",
+      "title": "Bien soan Bo Du Lieu 26+ Loai Ech That 100% va Anh Khong Watermark",
+      "status": "VERIFIED",
+      "accept": [
+        "Seed du 26 loai ech that, day du thong so herpetology, anh sach khong watermark va AI fact sheet hop le"
+      ],
+      "tests": [
+        "python tests/verify_detail_02_seed_data.py"
+      ],
+      "manual": [],
+      "depends": [
+        "DETAIL-01"
+      ],
+      "notes": [
+        {
+          "timestamp": "2026-10-28T09:43:11Z",
+          "why": "Xay dung bo du lieu 26 loai ech that 100%, anh that khong watermark va thong so herpetology khoa hoc",
+          "change": "Cap nhat apps/api/seed.sql bo sung 26 loai ech that (Pacman, Ech Cay, Phi Tieu, Ech Bo, Ech Reu VN...), tai va luu tru 10 anh goc chat luong cao khong watermark vao apps/web/public/images/frogs/, sinh day du thong so chuong nuoi dinh luong, dinh duong, canh bao va AI fact sheet"
+        }
+      ],
+      "diagnoses": [],
+      "verification": {
+        "timestamp": "2026-10-28T09:43:15Z",
+        "test_results": [
+          {
+            "command": "python tests/verify_detail_02_seed_data.py",
+            "returncode": 0,
+            "passed": true,
+            "stdout": "   -> OK: Đã nạp thành công 26 loài ếch và 26 bản ghi hồ sơ sinh học chuyên sâu!\n   -> OK: Toàn bộ 26 loài đều có ảnh thật trên đĩa, không dính watermark và dung lượng sắc nét!\n   -> OK: Toàn bộ dữ liệu JSON (thức ăn, cảnh báo, gallery, AI facts) parse hợp lệ 100%!\n   -> OK: AI knowledge snippet được định dạng chuẩn hóa Fact Sheet cho RAG/LLM.\nKiểm chứng Task DETAIL-02 hoàn tất thành công 100%!\n",
+            "stderr": ""
+          }
+        ],
+        "manual_evidence": null
+      }
+    },
+    {
+      "id": "DETAIL-03",
+      "title": "Backend API Chi Tiet San Pham va Endpoint Tri Thuc AI",
+      "status": "VERIFIED",
+      "accept": [
+        "API GET /api/products/:slug tra ve full biological profile; API GET /api/ai/frogs/knowledge va /api/ai/frogs/:slug tra ve Markdown RAG va JSON Facts"
+      ],
+      "tests": [
+        "python tests/verify_detail_03_api.py"
+      ],
+      "manual": [],
+      "depends": [
+        "DETAIL-02"
+      ],
+      "notes": [
+        {
+          "timestamp": "2026-10-28T09:46:13Z",
+          "why": "Cung cap bo API lay chi tiet ho so sinh hoc cua tung loai ech va endpoint chuyen biet cho AI/RAG doc tri thuc",
+          "change": "Cap nhat apps/api/src/index.ts: them types FrogSpeciesDetails; nang cap GET /products ho tro loc habitat_type va parse gallery_images; nang cap GET /products/:idOrSlug ho tro ca ID so va slug, tra ve full ho so sinh hoc 1-1; them GET /ai/frogs/knowledge va GET /ai/frogs/:slug (ho tro ?format=markdown)"
+        }
+      ],
+      "diagnoses": [],
+      "verification": {
+        "timestamp": "2026-10-28T09:46:20Z",
+        "test_results": [
+          {
+            "command": "python tests/verify_detail_03_api.py",
+            "returncode": 0,
+            "passed": true,
+            "stdout": "   -> OK: Database D1 local có đủ 26 loài ếch.\n   -> OK: Lọc theo môi trường leo cây (habitat_type='arboreal') trả về đúng 7 loài.\n   -> OK: Truy vấn chi tiết theo slug 'mossy-vietnamese' trả về đầy đủ hồ sơ sinh học & vi khí hậu!\n   -> OK: Truy vấn theo ID số (id=23) trả về đúng cá thể Ếch Rêu Việt Nam.\n   -> OK: Endpoint AI Knowledge Base trả về đầy đủ 26 Fact Sheets chuẩn hóa!\n   -> OK: Endpoint AI Fact Sheet của cá thể Pacman trả về Markdown chuẩn RAG!\n\nKiểm chứng Task DETAIL-03 hoàn tất thành công 100%!\n",
+            "stderr": ""
+          }
+        ],
+        "manual_evidence": null
+      }
+    },
+    {
+      "id": "DETAIL-04",
+      "title": "Xay dung Giao Dien Trang Chi Tiet Ech Rieng Biet FrogDetailPage",
+      "status": "VERIFIED",
+      "accept": [
+        "Component FrogDetailPage.tsx day du gallery zoom, climate gauge, 4 tab chuyen sau va ai summary card"
+      ],
+      "tests": [
+        "python tests/verify_detail_04_detail_ui.py"
+      ],
+      "manual": [],
+      "depends": [
+        "DETAIL-03"
+      ],
+      "notes": [
+        {
+          "timestamp": "2026-10-28T09:50:12Z",
+          "why": "Xay dung component trang chi tiet ech FrogDetailPage chuyen sau voi thu vien anh zoom, climate gauge, 4 tab thong so sinh hoc that va AI fact sheet",
+          "change": "Tao apps/web/src/FrogDetailPage.tsx; cap nhat api.ts voi Product, FrogSpeciesDetails, productDetail, aiKnowledge; bo sung toan bo CSS chuyen sau vao apps/web/src/styles.css"
+        }
+      ],
+      "diagnoses": [],
+      "verification": {
+        "timestamp": "2026-10-28T09:50:17Z",
+        "test_results": [
+          {
+            "command": "python tests/verify_detail_04_detail_ui.py",
+            "returncode": 0,
+            "passed": true,
+            "stdout": "   -> OK: Component FrogDetailPage.tsx có đầy đủ Gallery, Climate Gauge, 4 Tab sinh học và Thẻ AI Fact Sheet.\n   -> OK: api.ts đã cung cấp đầy đủ các types và hàm gọi API chi tiết.\n   -> OK: styles.css đã tích hợp đầy đủ hệ thống giao diện sinh học chuyên sâu.\n\nKiểm chứng Task DETAIL-04 hoàn tất thành công 100%!\n",
+            "stderr": ""
+          }
+        ],
+        "manual_evidence": null
+      }
+    },
+    {
+      "id": "DETAIL-05",
+      "title": "Nang Cap UI/UX Trang Chu va Widget Interactive Frog Matcher",
+      "status": "VERIFIED",
+      "accept": [
+        "Multi-faceted filter (habitat, difficulty, price), instant live search va widget Frog Matcher quiz 3 cau hoi"
+      ],
+      "tests": [
+        "python tests/verify_detail_05_home_ui.py"
+      ],
+      "manual": [],
+      "depends": [
+        "DETAIL-04"
+      ],
+      "notes": [
+        {
+          "timestamp": "2026-10-28T09:54:58Z",
+          "why": "Nang cap manh me UI/UX trang chu voi bo loc da chieu (Habitat, Khoang gia), live search, the san pham sinh thai va widget Frog Matcher Quiz",
+          "change": "Cap nhat apps/web/src/App.tsx: them bo loc habitat_type va priceRange; them widget 'Tro Thu Tim Ech' 3 cau hoi trac nghiem de xuat loai ech phu hop; cai tien the san pham voi card-habitat-badge va nut Chi Tiet; build Vite clean 0 loi"
+        }
+      ],
+      "diagnoses": [],
+      "verification": {
+        "timestamp": "2026-10-28T09:55:10Z",
+        "test_results": [
+          {
+            "command": "python tests/verify_detail_05_home_ui.py",
+            "returncode": 0,
+            "passed": true,
+            "stdout": "   -> OK: Đã tích hợp bộ lọc đa chiều (Môi trường sống, Khoảng giá, Độ khó, Danh mục).\n   -> OK: Đã tích hợp widget 'Trợ Thủ Tìm Ếch (Frog Matcher Quiz)' 3 câu hỏi trắc nghiệm.\n   -> OK: Thẻ sản phẩm cải tiến hiển thị biểu tượng môi trường và nút Chi Tiết.\n   -> Đang chạy npm run build apps/web...\n   -> OK: Vite build thành công 100%, không có lỗi type hay cú pháp!\n\nKiểm chứng Task DETAIL-05 hoàn tất thành công 100%!\n",
+            "stderr": ""
+          }
+        ],
+        "manual_evidence": null
+      }
+    },
+    {
+      "id": "DETAIL-06",
+      "title": "Tich Hop Routing Deep Linking, Chia Se URL va Gio Hang",
+      "status": "VERIFIED",
+      "accept": [
+        "Hash router /#/frogs/:slug load dung ech, copy link co toast, add to cart tu detail view thanh cong"
+      ],
+      "tests": [
+        "python tests/verify_detail_06_routing.py"
+      ],
+      "manual": [],
+      "depends": [
+        "DETAIL-05"
+      ],
+      "notes": [
+        {
+          "timestamp": "2026-10-28T09:56:59Z",
+          "why": "Hoan thien he thong Routing Deep Linking, chia se link san pham va dong bo gio hang so luong lon tu trang chi tiet",
+          "change": "Trien khai hash router regex #/frogs/:slug trong App.tsx; nut chia se sao chep direct URL trong FrogDetailPage.tsx; ho tro param qty trong api.add va POST /cart/items de them nhieu con ech cung luc vao gio; build web va api typecheck deu dat 0 loi"
+        }
+      ],
+      "diagnoses": [],
+      "verification": {
+        "timestamp": "2026-10-28T09:57:20Z",
+        "test_results": [
+          {
+            "command": "python tests/verify_detail_06_routing.py",
+            "returncode": 0,
+            "passed": true,
+            "stdout": "   -> OK: Regex Hash Routing khớp chính xác 100% các URL chia sẻ và Deep Link.\n   -> OK: Nút chia sẻ liên kết sao chép đúng Hash URL trực tiếp đến từng con ếch.\n   -> OK: Giỏ hàng hỗ trợ thêm số lượng tùy chọn (qty) trực tiếp từ trang chi tiết.\n   -> Đang kiểm tra build frontend (apps/web)...\n   -> OK: Frontend build thành công 0 lỗi!\n   -> Đang kiểm tra typecheck backend (apps/api)...\n   -> OK: Backend typecheck thành công 0 lỗi!\n\nKiểm chứng Task DETAIL-06 hoàn tất thành công 100%!\n",
+            "stderr": ""
+          }
+        ],
+        "manual_evidence": null
+      }
+    },
+    {
+      "id": "DETAIL-07",
+      "title": "Trien Khai Cloudflare Remote D1, Deploy Wrangler va Nghiem Thu Live URL",
+      "status": "VERIFIED",
+      "accept": [
+        "Remote D1 co 26 loai ech va full details, build web clean, deploy worker live va E2E test dat 100%"
+      ],
+      "tests": [
+        "python tests/verify_detail_07_production.py"
+      ],
+      "manual": [],
+      "depends": [
+        "DETAIL-06"
+      ],
+      "notes": [
+        {
+          "timestamp": "2026-10-28T10:00:46Z",
+          "why": "Xac nhan deploy toan dien len Cloudflare D1 Remote va Worker production https://store.ngoctuls2005.workers.dev, chay verify_detail_07_production.py dat 8/8 muc kiem thu",
+          "change": "Nap migration schema va seed 26 loai ech len Remote D1 store-db; build Vite web; deploy Worker len Cloudflare version e1cf3e0b-3341-4534-bbec-71e205b7a66b; test live E2E xac nhan catalog 26 loai, anh khong watermark, trang chi tiet, bo loc da chieu, API AI va gio hang hoat dong hoan hao 100%"
+        }
+      ],
+      "diagnoses": [],
+      "verification": {
+        "timestamp": "2026-10-28T10:01:04Z",
+        "test_results": [
+          {
+            "command": "python tests/verify_detail_07_production.py",
+            "returncode": 0,
+            "passed": true,
+            "stdout": "=====================================================================\nBẮT ĐẦU KIỂM THỬ E2E TOÀN DIỆN TRÊN PRODUCTION WORKER CLOUDFLARE\nURL: https://store.ngoctuls2005.workers.dev\n=====================================================================\n\n--- 1. KIỂM TRA CATALOG 26 LOÀI ẾCH THẬT TRÊN PRODUCTION ---\n   -> OK: Catalog trả về đúng 26 loài ếch sống với slug và gallery hợp lệ!\n\n--- 2. KIỂM TRA BỘ LỌC MÔI TRƯỜNG SỐNG (HABITAT FILTER) ---\n   -> OK: Lọc 'habitat=arboreal' trả về đúng 7 loài ếch cây leo trèo!\n\n--- 3. KIỂM TRA TRANG CHI TIẾT RIÊNG: ẾCH RÊU VIỆT NAM (THELODERMA CORTICALE) ---\n   -> OK: Trang chi tiết ếch rêu Việt Nam trả về 100% thông tin sinh học chính xác!\n\n--- 4. KIỂM TRA TRANG CHI TIẾT QUA ID SỐ: PACMAN GREEN (ID=1) ---\n   -> OK: Truy vấn qua ID số trả về đúng hồ sơ sinh học và cảnh báo nuôi đơn độc!\n\n--- 5. KIỂM TRA ENDPOINT AI KNOWLEDGE RETRIEVAL (/api/ai/frogs/knowledge) ---\n   -> OK: AI Knowledge Base trả về đầy đủ 26 Fact Sheets cho LLM/RAG!\n\n--- 6. KIỂM TRA RAW FACT SHEET MARKDOWN CHO AI PROMPT (/api/ai/frogs/:slug?format=markdown) ---\n   -> OK: Endpoint trả về raw Markdown Fact Sheet sẵn sàng làm prompt context cho AI!\n\n--- 7. KIỂM TRA TẢI ẢNH THẬT KHÔNG WATERMARK TRÊN PRODUCTION ASSETS ---\n   -> OK: /images/frogs/tree-amazon-milk.jpg tải thành công từ edge (1354364 bytes, sắc nét, không watermark)\n   -> OK: /images/frogs/mossy-frog.jpg tải thành công từ edge (49536 bytes, sắc nét, không watermark)\n   -> OK: /images/frogs/dart-azureus.jpg tải thành công từ edge (28458 bytes, sắc nét, không watermark)\n\n--- 8. KIỂM TRA THÊM NHIỀU CÁ THỂ TỪ TRANG CHI TIẾT VÀO GIỎ HÀNG ---\n   -> OK: Thêm số lượng 2 cá thể trực tiếp từ trang chi tiết vào giỏ hàng thành công (Tổng bé: 4)!\n\n=====================================================================\nTẤT CẢ CÁC MỤC KIỂM THỬ TRÊN PRODUCTION WORKER ĐÃ ĐẠT 100% THÀNH CÔNG!\n=====================================================================\n",
+            "stderr": ""
+          }
+        ],
+        "manual_evidence": null
+      }
+    },
+    {
+      "id": "UI-01",
+      "title": "An Toan Bo Du Lieu Ky Thuat AI Khoi Giao Dien Khach Hang",
+      "status": "VERIFIED",
+      "accept": [
+        "Loai bo hoan toan khoi .ai-snippet-card va nut copy Markdown khoi FrogDetailPage.tsx"
+      ],
+      "tests": [
+        "python tests/verify_ui_01_hide_ai_raw.py"
+      ],
+      "manual": [],
+      "depends": [],
+      "notes": [
+        {
+          "timestamp": "2026-10-29T06:56:09Z",
+          "why": "Loai bo khoi raw code block AI fact sheet khoi giao dien nguoi dung nham dam bao tinh tham my chuyen nghiep",
+          "change": "Xoa khoi .ai-snippet-card, nut Sao chep Fact Sheet Markdown va ham handleCopyAiSheet trong apps/web/src/FrogDetailPage.tsx; giu nguyen 4 tab sinh hoc va du lieu backend cho AI chatbot"
+        }
+      ],
+      "diagnoses": [],
+      "verification": {
+        "timestamp": "2026-10-29T06:56:20Z",
+        "test_results": [
+          {
+            "command": "python tests/verify_ui_01_hide_ai_raw.py",
+            "returncode": 0,
+            "passed": true,
+            "stdout": "   -> OK: Khối dữ liệu thô AI Fact Sheet đã được ẩn hoàn toàn 100% khỏi giao diện người dùng!\n   -> OK: Toàn bộ 4 tab sinh học và thước đo vi khí hậu vẫn hoạt động đầy đủ và thẩm mỹ.\n   -> OK: Build frontend thành công 0 lỗi!\n\nKiểm chứng Task UI-01 hoàn tất thành công 100%!\n",
+            "stderr": ""
+          }
+        ],
+        "manual_evidence": null
+      }
+    },
+    {
+      "id": "UI-02",
+      "title": "Xay Dung Widget Tro Ly Ech AI Thong Minh Floating Chatbot",
+      "status": "VERIFIED",
+      "accept": [
+        "Component FrogAiChatbot.tsx hoat dong voi nut FAB goc phai, quick prompts va tra loi tu CSDL AI"
+      ],
+      "tests": [
+        "python tests/verify_ui_02_ai_chatbot.py"
+      ],
+      "manual": [],
+      "depends": [
+        "UI-01"
+      ],
+      "notes": [
+        {
+          "timestamp": "2026-10-29T07:00:07Z",
+          "why": "Chuyen doi du lieu ky thuat AI thanh widget Chatbot tro ly thong minh thay vi de lo tren UI",
+          "change": "Tao component FrogAiChatbot.tsx voi 4 quick prompts, lien ket CSDL AI, tich hop vao App.tsx va them styles hoan chinh"
+        }
+      ],
+      "diagnoses": [],
+      "verification": {
+        "timestamp": "2026-10-29T07:00:18Z",
+        "test_results": [
+          {
+            "command": "python tests/verify_ui_02_ai_chatbot.py",
+            "returncode": 0,
+            "passed": true,
+            "stdout": "=== VERIFYING UI-02: FROG AI CHATBOT INTEGRATION ===\n[1/5] Checking FrogAiChatbot.tsx...\n -> FrogAiChatbot.tsx verified!\n[2/5] Checking App.tsx integration...\n -> App.tsx integration verified!\n[3/5] Checking styles.css for Chatbot...\n -> styles.css verified!\n[4/5] Running TypeScript compile & Vite build...\n -> Vite build succeeded 100% with 0 errors!\n[5/5] ALL CHECKS PASSED FOR UI-02! READY TO VERIFY.\n",
+            "stderr": ""
+          }
+        ],
+        "manual_evidence": null
+      }
+    },
+    {
+      "id": "UI-03",
+      "title": "Chuan Hoa The San Pham Deu Chieu Cao va Bo QuickView Thua",
+      "status": "VERIFIED",
+      "accept": [
+        "Card ap dung line-clamp-2 deu tamm tap, loai bo quickview cu, nut Xem Chi Tiet dan thang vao trang chi tiet"
+      ],
+      "tests": [
+        "python tests/verify_ui_03_card_perfection.py"
+      ],
+      "manual": [],
+      "depends": [
+        "UI-02"
+      ],
+      "notes": [
+        {
+          "timestamp": "2026-10-29T07:03:02Z",
+          "why": "Loai bo modal QuickView thua thai va dong bo the san pham thang hang, bam vao the dan thang toi FrogDetailPage",
+          "change": "Xoa quickView state va modal trong App.tsx, bo sung click router cho card img va title, them min-height va line-clamp-2 cho card trong styles.css"
+        }
+      ],
+      "diagnoses": [],
+      "verification": {
+        "timestamp": "2026-10-29T07:03:12Z",
+        "test_results": [
+          {
+            "command": "python tests/verify_ui_03_card_perfection.py",
+            "returncode": 0,
+            "passed": true,
+            "stdout": "=== VERIFYING UI-03: CARD PERFECTION & REMOVE QUICKVIEW ===\n[1/4] Checking App.tsx for card standardization & removed quickView...\n -> App.tsx passed: quickView cleanly removed, direct detail navigation verified!\n[2/4] Checking styles.css for card alignment & line-clamp...\n -> styles.css passed: card flex height & line-clamp verified!\n[3/4] Running TypeScript compile & Vite build...\n -> Vite build passed 100%!\n[4/4] ALL CHECKS PASSED FOR UI-03! READY TO VERIFY.\n",
+            "stderr": ""
+          }
+        ],
+        "manual_evidence": null
+      }
+    },
+    {
+      "id": "UI-04",
+      "title": "Tinh Gon Bo Loc Da Chieu va Nang Cap Hero Quiz Banner",
+      "status": "VERIFIED",
+      "accept": [
+        "Category tabs capsule pills cuon ngang, 4 dropdown gon gang, search bar co nut xoa va hero quiz banner dep mat"
+      ],
+      "tests": [
+        "python tests/verify_ui_04_filter_and_quiz.py"
+      ],
+      "manual": [],
+      "depends": [
+        "UI-03"
+      ],
+      "notes": [
+        {
+          "timestamp": "2026-10-29T07:08:03Z",
+          "why": "Nang cap trai nghiem tim kiem voi nut clear tuc thi va bo loc capsule khong loi tren mobile",
+          "change": "Them nut btn-search-clear, search-result-banner trong App.tsx, scrollbar-width none va animation cho capsule tabs trong styles.css"
+        }
+      ],
+      "diagnoses": [],
+      "verification": {
+        "timestamp": "2026-10-29T07:08:13Z",
+        "test_results": [
+          {
+            "command": "python tests/verify_ui_04_filter_and_quiz.py",
+            "returncode": 0,
+            "passed": true,
+            "stdout": "=== VERIFYING UI-04: FILTER BAR & HERO QUIZ BANNER ===\n[1/4] Checking App.tsx for quick search clear & result banner...\n -> App.tsx filter toolbar & search banner verified!\n[2/4] Checking styles.css for clear search & capsule tabs...\n -> styles.css verified!\n[3/4] Running TypeScript compile & Vite build...\n -> Vite build succeeded 100%!\n[4/4] ALL CHECKS PASSED FOR UI-04! READY TO VERIFY.\n",
+            "stderr": ""
+          }
+        ],
+        "manual_evidence": null
+      }
+    },
+    {
+      "id": "UI-05",
+      "title": "Toi Uu Hoa Gio Hang Tang Giam So Luong va Sticky Bottom Bar",
+      "status": "VERIFIED",
+      "accept": [
+        "Cart drawer co nut +/- so luong va nut xoa mon, FrogDetailPage co sticky bottom bar tren mobile"
+      ],
+      "tests": [
+        "python tests/verify_ui_05_cart_and_sticky.py"
+      ],
+      "manual": [],
+      "depends": [
+        "UI-04"
+      ],
+      "notes": [
+        {
+          "timestamp": "2026-10-29T07:10:20Z",
+          "why": "Hoan thien trai nghiem mua hang voi bo tang giam so luong truc tiep trong cart va sticky bottom bar tren mobile",
+          "change": "Bo sung sticky-mobile-buy-bar vao FrogDetailPage.tsx, them responsive styles trong styles.css va kiem chung cart drawer controls"
+        }
+      ],
+      "diagnoses": [],
+      "verification": {
+        "timestamp": "2026-10-29T07:10:30Z",
+        "test_results": [
+          {
+            "command": "python tests/verify_ui_05_cart_and_sticky.py",
+            "returncode": 0,
+            "passed": true,
+            "stdout": "=== VERIFYING UI-05: CART CONTROLS & STICKY MOBILE BAR ===\n[1/4] Checking App.tsx for Cart Drawer +/- quantity controls & guest banner...\n -> Cart Drawer interactive controls & auth lock verified!\n[2/4] Checking FrogDetailPage.tsx for Sticky Mobile Bar...\n -> FrogDetailPage.tsx sticky mobile bar verified!\n[3/4] Checking styles.css for sticky mobile buy bar & mobile position...\n -> styles.css sticky bar responsive styles verified!\n[4/4] Running TypeScript compile & Vite build...\n -> Vite build succeeded 100%!\n[5/5] ALL CHECKS PASSED FOR UI-05! READY TO VERIFY.\n",
+            "stderr": ""
+          }
+        ],
+        "manual_evidence": null
+      }
+    },
+    {
+      "id": "UI-06",
+      "title": "Deploy Production Cloudflare va Kiem Thu Toan Dien E2E",
+      "status": "VERIFIED",
+      "accept": [
+        "Build web clean, deploy Worker workers.dev thanh cong va chay test E2E dat 100%"
+      ],
+      "tests": [
+        "python tests/verify_ui_06_production_e2e.py"
+      ],
+      "manual": [],
+      "depends": [
+        "UI-05"
+      ],
+      "notes": [
+        {
+          "timestamp": "2026-10-29T07:14:00Z",
+          "why": "Trien khai toan bo cac cai tien UI/UX len moi truong Cloudflare Production va nghiem thu truc tiep",
+          "change": "Build frontend 0 warning, deploy wrangler len store.ngoctuls2005.workers.dev va test E2E 5 buoc xac thuc 100% thanh cong"
+        }
+      ],
+      "diagnoses": [],
+      "verification": {
+        "timestamp": "2026-10-29T07:14:07Z",
+        "test_results": [
+          {
+            "command": "python tests/verify_ui_06_production_e2e.py",
+            "returncode": 0,
+            "passed": true,
+            "stdout": "=== RUNNING UI-06: PRODUCTION E2E VERIFICATION ===\n[1/5] Checking Production Homepage HTML & Assets...\n -> Homepage HTML loaded successfully!\n[2/5] Checking Products API (26 real species)...\n -> Products API returned 26 species perfectly!\n[3/5] Checking AI Knowledge Endpoint (for FrogAiChatbot)...\n -> AI Knowledge API verified with 26 specialized LLM profiles!\n[4/5] Checking Species Detail API by Slug (Pacman Green)...\n -> Species Detail API verified with 100% genuine biological data!\n[5/5] Checking Production JS Bundle (Raw AI Hidden & Chatbot Included)...\n -> Production JS bundle verified: Raw AI completely hidden, AI Chatbot & Sticky Bar live!\n>>> ALL PRODUCTION E2E CHECKS PASSED 100%! <<<\n",
+            "stderr": ""
+          }
+        ],
+        "manual_evidence": null
+      }
+    }
+  ]
+}
