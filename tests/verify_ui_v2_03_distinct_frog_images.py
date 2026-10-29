@@ -19,3 +19,4 @@ with open(dumpy, "rb") as f1, open(snowflake, "rb") as f2:
 
 print(f"[PASS] Distinct images verified! Dumpy MD5={h1[:8]}, Snowflake MD5={h2[:8]}")
 print("TASK-03 VERIFIED SUCCESSFULLY!")
+

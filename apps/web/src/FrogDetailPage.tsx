@@ -267,8 +267,8 @@ export const FrogDetailPage: React.FC<FrogDetailPageProps> = ({
             {/* Temperature Gauge */}
             <div className="gauge-item">
               <div className="gauge-top-label">
-                <span>Nhiệt Độ Ban Ngày: <strong>{d.temp_day_min}°C - {d.temp_day_max}°C</strong></span>
-                <span>Ban Đêm: <strong>{d.temp_night_min}°C - {d.temp_night_max}°C</strong></span>
+                <span className="gauge-main-title">🌡️ Nhiệt Độ Ban Ngày: <strong>{d.temp_day_min}°C - {d.temp_day_max}°C</strong></span>
+                <span className="gauge-sub-pill">Ban đêm: {d.temp_night_min}°C - {d.temp_night_max}°C</span>
               </div>
               <div className="progress-track temp-track">
                 <div
@@ -277,13 +277,14 @@ export const FrogDetailPage: React.FC<FrogDetailPageProps> = ({
                     left: `${Math.max(0, ((d.temp_day_min - 15) / 25) * 100)}%`,
                     width: `${Math.min(100, ((d.temp_day_max - d.temp_day_min) / 25) * 100)}%`
                   }}
+                  title={`Dải nhiệt an toàn: ${d.temp_day_min}°C - ${d.temp_day_max}°C`}
                 >
-                  <span className="safe-badge">Dải An Toàn</span>
+                  <div className="safe-zone-glow"></div>
                 </div>
               </div>
               <div className="gauge-scale">
                 <span>15°C (Lạnh)</span>
-                <span>25°C (Lý tưởng)</span>
+                <span className="gauge-ideal-mark">25°C (Lý tưởng)</span>
                 <span>40°C (Nguy hiểm)</span>
               </div>
             </div>
@@ -291,8 +292,8 @@ export const FrogDetailPage: React.FC<FrogDetailPageProps> = ({
             {/* Humidity Gauge */}
             <div className="gauge-item">
               <div className="gauge-top-label">
-                <span>Độ Ẩm Không Khí: <strong>{d.humidity_min}% - {d.humidity_max}%</strong></span>
-                <span>Khuyến nghị: <strong>Xịt ẩm 1-2 lần/ngày</strong></span>
+                <span className="gauge-main-title">💧 Độ Ẩm Không Khí: <strong>{d.humidity_min}% - {d.humidity_max}%</strong></span>
+                <span className="gauge-sub-pill">Xịt ẩm 1-2 lần/ngày</span>
               </div>
               <div className="progress-track humid-track">
                 <div
@@ -301,13 +302,14 @@ export const FrogDetailPage: React.FC<FrogDetailPageProps> = ({
                     left: `${d.humidity_min}%`,
                     width: `${d.humidity_max - d.humidity_min}%`
                   }}
+                  title={`Độ ẩm chuẩn: ${d.humidity_min}% - ${d.humidity_max}%`}
                 >
-                  <span className="safe-badge">Ẩm Chuẩn</span>
+                  <div className="safe-zone-glow"></div>
                 </div>
               </div>
               <div className="gauge-scale">
                 <span>0% (Khô hạn)</span>
-                <span>50%</span>
+                <span className="gauge-ideal-mark">50%</span>
                 <span>100% (Bão hòa)</span>
               </div>
             </div>

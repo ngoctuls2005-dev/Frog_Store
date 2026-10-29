@@ -39,3 +39,4 @@ with open(path, "w", encoding="utf-8") as f:
     f.write("\n".join(new_lines) + "\n")
 
 print("SUCCESS: Updated apps/api/seed.sql for featured products!")
+

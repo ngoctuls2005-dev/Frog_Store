@@ -12,3 +12,4 @@ assert "prefers-reduced-motion: reduce" in content, "prefers-reduced-motion medi
 
 print("[PASS] Endless pulse & bobbing removed, prefers-reduced-motion added successfully!")
 print("TASK-05 VERIFIED SUCCESSFULLY!")
+

@@ -12,3 +12,4 @@ if target in sql:
     print("SUCCESS: Fixed gallery_images in seed.sql!")
 else:
     print("No cross-reference found in seed.sql")
+

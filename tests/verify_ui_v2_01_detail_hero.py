@@ -15,3 +15,4 @@ if not match:
 
 print("[PASS] Hero banner is correctly hidden when activeDetailSlug is active!")
 print("TASK-01 VERIFIED SUCCESSFULLY!")
+

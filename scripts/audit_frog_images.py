@@ -38,3 +38,4 @@ with open(dumpy, "rb") as f1, open(snowflake, "rb") as f2:
     assert f1.read() != f2.read(), "tree-whites-dumpy.jpg and tree-blue-snowflake.jpg MUST NOT be identical!"
 
 print("[PASS] Dumpy and Snowflake verified distinct!")
+

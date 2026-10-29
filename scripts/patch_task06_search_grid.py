@@ -170,3 +170,4 @@ norm_css = norm_css.replace(old_grid_css.replace("\r\n", "\n"), new_grid_css.rep
 with open(path_css, "w", encoding="utf-8") as f:
     f.write(norm_css)
 print("SUCCESS: Patched styles.css with .grid-few and .search-feedback-bar styles!")
+

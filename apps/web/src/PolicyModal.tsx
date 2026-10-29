@@ -1,5 +1,17 @@
 import React from 'react'
-import { ShieldCheck, Truck, FileText, X, Lock, CheckCircle2 } from 'lucide-react'
+import {
+  ShieldCheck,
+  Truck,
+  FileText,
+  X,
+  Lock,
+  CheckCircle2,
+  AlertTriangle,
+  HeartHandshake,
+  Clock,
+  Sparkles,
+  ExternalLink
+} from 'lucide-react'
 
 export type PolicyType = 'privacy' | 'warranty' | 'terms'
 
@@ -19,154 +31,298 @@ export const PolicyModal: React.FC<PolicyModalProps> = ({
   if (!isOpen) return null
 
   return (
-    <div className="modal-overlay" onClick={onClose} style={{ zIndex: 10001 }}>
+    <div className="modal-overlay policy-modal-overlay" onClick={onClose} style={{ zIndex: 10001 }}>
       <div
-        className="modal-card"
-        style={{ maxWidth: 680, maxHeight: '85vh', display: 'flex', flexDirection: 'column' }}
+        className="modal-card policy-modal-card"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Header */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            {activePolicy === 'privacy' && <Lock size={22} color="#059669" />}
-            {activePolicy === 'warranty' && <ShieldCheck size={22} color="#059669" />}
-            {activePolicy === 'terms' && <FileText size={22} color="#059669" />}
-            <h2 style={{ margin: 0, fontSize: '1.25rem', color: '#1e293b' }}>
-              {activePolicy === 'privacy' && 'Chính Sách Quyền Riêng Tư & Bảo Mật Dữ Liệu'}
-              {activePolicy === 'warranty' && 'Chính Sách Vận Chuyển & Bảo Hành Sống 100%'}
-              {activePolicy === 'terms' && 'Điều Khoản Dịch Vụ & Pháp Lý Vật Nuôi'}
-            </h2>
+        {/* Modern Header Banner */}
+        <div className="policy-modal-header">
+          <div className="policy-header-left">
+            <div className="policy-icon-badge">
+              {activePolicy === 'privacy' && <Lock size={22} color="#059669" />}
+              {activePolicy === 'warranty' && <ShieldCheck size={22} color="#059669" />}
+              {activePolicy === 'terms' && <FileText size={22} color="#059669" />}
+            </div>
+            <div>
+              <h2 className="policy-modal-title">
+                {activePolicy === 'privacy' && 'Chính Sách Quyền Riêng Tư & Bảo Mật Dữ Liệu'}
+                {activePolicy === 'warranty' && 'Chính Sách Vận Chuyển & Bảo Hành Sống 100%'}
+                {activePolicy === 'terms' && 'Điều Khoản Dịch Vụ & Pháp Lý Vật Nuôi (CITES)'}
+              </h2>
+              <p className="policy-modal-subtitle">
+                Cam kết minh bạch thông tin &amp; bảo trợ toàn diện từ Frog Store Việt Nam
+              </p>
+            </div>
           </div>
-          <button className="modal-close" style={{ position: 'static' }} onClick={onClose}>
-            <X size={18} />
+          <button className="policy-close-btn" onClick={onClose} aria-label="Đóng cửa sổ chính sách" title="Đóng">
+            <X size={20} />
           </button>
         </div>
 
-        {/* Policy Navigation Tabs */}
-        <div style={{ display: 'flex', gap: 8, marginBottom: 16, borderBottom: '1px solid #e2e8f0', paddingBottom: 8 }}>
+        {/* Segmented Pill Tabs Navigation */}
+        <div className="policy-tab-bar">
           <button
             type="button"
-            className={`tab-btn ${activePolicy === 'privacy' ? 'active' : ''}`}
+            className={`policy-tab-item ${activePolicy === 'privacy' ? 'active' : ''}`}
             onClick={() => onSelectPolicy('privacy')}
-            style={{ fontSize: '0.82rem', padding: '6px 14px' }}
           >
-            🔒 Quyền Riêng Tư
+            <Lock size={15} />
+            <span>Quyền Riêng Tư</span>
           </button>
           <button
             type="button"
-            className={`tab-btn ${activePolicy === 'warranty' ? 'active' : ''}`}
+            className={`policy-tab-item ${activePolicy === 'warranty' ? 'active' : ''}`}
             onClick={() => onSelectPolicy('warranty')}
-            style={{ fontSize: '0.82rem', padding: '6px 14px' }}
           >
-            📦 Vận Chuyển &amp; Bảo Hành
+            <Truck size={15} />
+            <span>Vận Chuyển &amp; Bảo Hành</span>
           </button>
           <button
             type="button"
-            className={`tab-btn ${activePolicy === 'terms' ? 'active' : ''}`}
+            className={`policy-tab-item ${activePolicy === 'terms' ? 'active' : ''}`}
             onClick={() => onSelectPolicy('terms')}
-            style={{ fontSize: '0.82rem', padding: '6px 14px' }}
           >
-            ⚖️ Điều Khoản &amp; CITES
+            <FileText size={15} />
+            <span>Điều Khoản &amp; CITES</span>
           </button>
         </div>
 
-        {/* Content Body */}
-        <div style={{ flex: 1, overflowY: 'auto', paddingRight: 6, fontSize: '0.88rem', lineHeight: 1.6, color: '#334155' }}>
+        {/* Scrollable Content Body with Structured Cards */}
+        <div className="policy-scroll-body">
+          {/* TAB 1: PRIVACY POLICY */}
           {activePolicy === 'privacy' && (
-            <div>
-              <h4 style={{ color: '#047857', marginTop: 0 }}>1. Dữ liệu cá nhân chúng tôi thu thập</h4>
-              <p>
-                Để phục vụ việc tư vấn, vận chuyển cá thể sống giữ nhiệt và thực hiện bảo hành, Frog Store thu thập:
-              </p>
-              <ul>
-                <li><strong>Họ tên và số điện thoại</strong>: Dùng để liên hệ xác nhận đơn hàng và điều phối người giao hàng hỏa tốc.</li>
-                <li><strong>Địa chỉ nhận hàng và thành phố</strong>: Dùng để định tuyến vận chuyển thùng xốp giữ ẩm.</li>
-                <li><strong>Tọa độ GPS (Vĩ độ / Kinh độ)</strong>: Chỉ thu thập khi quý khách <em>chủ động</em> nhấn nút "Quét Vị Trí Của Tôi" trong form thanh toán; không tự ý theo dõi vị trí ngầm.</li>
-                <li><strong>Email và mật khẩu</strong>: Mật khẩu được băm một chiều an toàn bằng PBKDF2-SHA256 (100,000 vòng) và muối bảo mật 16 bytes; không ai có thể giải mã ngược.</li>
-              </ul>
+            <div className="policy-content-stack">
+              <div className="policy-callout-box emerald-box">
+                <ShieldCheck size={20} className="callout-icon" />
+                <div>
+                  <strong>Cam kết bảo mật tuyệt đối:</strong> Frog Store không bán, trao đổi hoặc thương mại hóa thông tin khách hàng cho bất kỳ bên thứ ba quảng cáo nào. Dữ liệu được mã hóa đa tầng trên Cloudflare D1/KV.
+                </div>
+              </div>
 
-              <h4 style={{ color: '#047857' }}>2. Mục đích sử dụng dữ liệu</h4>
-              <ul>
-                <li>Xử lý giỏ hàng, lập phiếu giao hàng hỏa tốc thú cưng sống.</li>
-                <li>Kích hoạt chính sách <strong>Bảo Hành Sống 100%</strong> khi nhận hàng.</li>
-                <li>Tra cứu tiến độ giao hàng và hỗ trợ kỹ thuật nuôi trọn đời.</li>
-              </ul>
+              <div className="policy-card">
+                <div className="policy-card-head">
+                  <span className="policy-step-num">01</span>
+                  <h4>Dữ liệu cá nhân chúng tôi thu thập</h4>
+                </div>
+                <div className="policy-card-content">
+                  <p className="policy-p">Để xử lý đơn hàng thú cưng sống và kích hoạt chế độ bảo hành chuyên biệt, chúng tôi thu thập:</p>
+                  <ul className="policy-check-list">
+                    <li>
+                      <CheckCircle2 size={16} className="check-ico" />
+                      <span><strong>Họ tên &amp; Số điện thoại:</strong> Dùng để liên hệ xác nhận đơn và điều phối shipper giao thùng xốp giữ ẩm hỏa tốc.</span>
+                    </li>
+                    <li>
+                      <CheckCircle2 size={16} className="check-ico" />
+                      <span><strong>Địa chỉ nhận hàng &amp; Tỉnh/Thành:</strong> Dùng định tuyến quãng đường vận chuyển nhanh nhất tránh làm sốc nhiệt thú cưng.</span>
+                    </li>
+                    <li>
+                      <CheckCircle2 size={16} className="check-ico" />
+                      <span><strong>Tọa độ GPS (Vĩ độ / Kinh độ):</strong> Chỉ lưu khi quý khách <em>chủ động nhấn nút quét GPS</em> trong trang thanh toán; không theo dõi ngầm.</span>
+                    </li>
+                    <li>
+                      <CheckCircle2 size={16} className="check-ico" />
+                      <span><strong>Mật khẩu tài khoản:</strong> Băm một chiều bằng PBKDF2-SHA256 (100,000 vòng lặp) kèm muối 16-byte an toàn tuyệt đối.</span>
+                    </li>
+                  </ul>
+                </div>
+              </div>
 
-              <h4 style={{ color: '#047857' }}>3. Cam kết chia sẻ bên thứ ba</h4>
-              <p>
-                Frog Store <strong>tuyệt đối không bán, trao đổi hoặc chia sẻ thông tin cá nhân của bạn</strong> cho các mạng lưới quảng cáo hoặc đơn vị tiếp thị bên ngoài. Dữ liệu địa chỉ chỉ được gửi đến đơn vị vận chuyển đối tác để giao thùng xốp và hệ thống OpenStreetMap Nominatim nhằm xác định địa danh hành chính.
-              </p>
+              <div className="policy-card">
+                <div className="policy-card-head">
+                  <span className="policy-step-num">02</span>
+                  <h4>Mục đích sử dụng dữ liệu</h4>
+                </div>
+                <div className="policy-card-content">
+                  <ul className="policy-check-list">
+                    <li>
+                      <CheckCircle2 size={16} className="check-ico" />
+                      <span>Xử lý giỏ hàng, đóng gói hộp xốp và lập phiếu giao nhận hỏa tốc chuyên tuyến.</span>
+                    </li>
+                    <li>
+                      <CheckCircle2 size={16} className="check-ico" />
+                      <span>Kích hoạt gói <strong>Bảo Hành Sống 100%</strong> và liên kết lịch sử tiêm phòng / theo dõi sức khỏe vật nuôi.</span>
+                    </li>
+                    <li>
+                      <CheckCircle2 size={16} className="check-ico" />
+                      <span>Hỗ trợ tư vấn kỹ thuật nuôi trọn đời qua Trợ Lý AI và đội ngũ chuyên gia Frog Store.</span>
+                    </li>
+                  </ul>
+                </div>
+              </div>
 
-              <h4 style={{ color: '#047857' }}>4. Thời hạn lưu trữ &amp; Quyền xóa dữ liệu</h4>
-              <p>
-                Thông tin được lưu trữ an toàn trên hạ tầng mã hóa Cloudflare D1/KV. Quý khách có quyền xem, chỉnh sửa thông tin trong phần Hồ sơ cá nhân hoặc yêu cầu xóa toàn bộ tài khoản bất cứ lúc nào qua Hotline: <strong>0988.123.456</strong>.
-              </p>
+              <div className="policy-card">
+                <div className="policy-card-head">
+                  <span className="policy-step-num">03</span>
+                  <h4>Thời hạn lưu trữ &amp; Quyền riêng tư của bạn</h4>
+                </div>
+                <div className="policy-card-content">
+                  <p className="policy-p">
+                    Quý khách có toàn quyền xem, chỉnh sửa thông tin trong mục <strong>Hồ Sơ Cá Nhân</strong> hoặc yêu cầu xóa toàn bộ dữ liệu tài khoản bất kỳ lúc nào qua Hotline kỹ thuật: <strong>0988.123.456</strong>.
+                  </p>
+                </div>
+              </div>
             </div>
           )}
 
+          {/* TAB 2: SHIPPING & 100% LIVE ARRIVAL WARRANTY */}
           {activePolicy === 'warranty' && (
-            <div>
-              <h4 style={{ color: '#047857', marginTop: 0 }}>1. Quy cách đóng gói chuyên dụng hàng sống</h4>
-              <p>
-                Mọi cá thể ếch cảnh trước khi gửi đều được kiểm tra sức khỏe, phản xạ đớp mồi và nhịn ăn 24h để đảm bảo đường tiêu hóa sạch sẽ:
-              </p>
-              <ul>
-                <li>Đựng trong hộp nhựa thoáng khí có lót mút xốp ngậm nước hoặc dớn rêu tiệt trùng.</li>
-                <li>Đóng hộp xốp cách nhiệt tiêu chuẩn, có dán băng dính cảnh báo <em>"Động Vật Sống - Xin Nhẹ Tay"</em>.</li>
-                <li>Vào mùa hè bổ sung túi giữ lạnh sinh học (ice gel pack); mùa đông có túi sưởi ấm chuyên dụng.</li>
-              </ul>
+            <div className="policy-content-stack">
+              <div className="policy-callout-box amber-box">
+                <AlertTriangle size={20} className="callout-icon" />
+                <div>
+                  <strong>Quy định kích hoạt bảo hành sống:</strong> Quý khách vui lòng quay video mở thùng (Unboxing) liền mạch từ lúc còn nguyên tem niêm phong và thông báo trong vòng <strong>30 phút</strong> kể từ khi nhận hàng.
+                </div>
+              </div>
 
-              <h4 style={{ color: '#047857' }}>2. Điều kiện áp dụng Bảo Hành Sống 100%</h4>
-              <ul>
-                <li>Khách hàng nhận hàng đúng giờ hẹn với shipper (không hoãn lịch giao hàng sống quá 2 giờ).</li>
-                <li>
-                  <strong>Bắt buộc quay video mở thùng (Unboxing)</strong>: Video quay liền mạch, không cắt ghép, từ lúc tem niêm phong còn nguyên đến khi kiểm tra tình trạng cá thể bên trong.
-                </li>
-                <li>Thông báo ngay cho Frog Store trong vòng <strong>30 phút</strong> kể từ khi ký nhận bưu kiện.</li>
-              </ul>
+              <div className="policy-card">
+                <div className="policy-card-head">
+                  <span className="policy-step-num">01</span>
+                  <h4>Quy chuẩn đóng thùng giữ ẩm chuyên dụng</h4>
+                </div>
+                <div className="policy-card-content">
+                  <p className="policy-p">Để bảo đảm 100% các bé ếch đến nơi khỏe mạnh, Frog Store áp dụng quy trình đóng gói tiêu chuẩn quốc tế:</p>
+                  <ul className="policy-check-list">
+                    <li>
+                      <CheckCircle2 size={16} className="check-ico" />
+                      <span>Ếch được dưỡng khỏe, nhịn ăn 24 giờ trước khi giao để đường tiêu hóa sạch sẽ, không say xe.</span>
+                    </li>
+                    <li>
+                      <CheckCircle2 size={16} className="check-ico" />
+                      <span>Hộp nhựa đục lỗ thoáng khí vi điểm, lót mút xốp ngậm nước sạch hoặc dớn rêu tiệt trùng giữ ẩm cao.</span>
+                    </li>
+                    <li>
+                      <CheckCircle2 size={16} className="check-ico" />
+                      <span>Thùng xốp dày cách nhiệt, dán tem cảnh báo <em>"Động Vật Sống - Xin Nhẹ Tay"</em>. Mùa hè kèm gel đá khô sinh học; mùa đông kèm túi sưởi ấm chuyên dụng.</span>
+                    </li>
+                  </ul>
+                </div>
+              </div>
 
-              <h4 style={{ color: '#047857' }}>3. Chính sách giải quyết rủi ro</h4>
-              <p>
-                Trong trường hợp đáng tiếc cá thể bị sốc nhiệt hoặc tử vong trong quá trình vận chuyển:
-              </p>
-              <ul>
-                <li><strong>Lựa chọn 1</strong>: Frog Store gửi bù ngay 1 cá thể cùng loại hoàn toàn miễn phí (bao gồm miễn phí cước vận chuyển lần 2).</li>
-                <li><strong>Lựa chọn 2</strong>: Hoàn trả 100% số tiền đơn hàng qua chuyển khoản ngân hàng trong vòng 2 giờ làm việc.</li>
-              </ul>
+              <div className="policy-card">
+                <div className="policy-card-head">
+                  <span className="policy-step-num">02</span>
+                  <h4>Điều kiện bảo hành sống 100%</h4>
+                </div>
+                <div className="policy-card-content">
+                  <ul className="policy-check-list">
+                    <li>
+                      <CheckCircle2 size={16} className="check-ico" />
+                      <span>Khách hàng nhận hàng đúng giờ hẹn với shipper (không hoãn lịch giao hàng sống quá 2 giờ).</span>
+                    </li>
+                    <li>
+                      <CheckCircle2 size={16} className="check-ico" />
+                      <span><strong>Quay video unboxing:</strong> Video rõ nét, liền mạch, không cắt ghép từ lúc thùng còn nguyên băng dính niêm phong.</span>
+                    </li>
+                    <li>
+                      <CheckCircle2 size={16} className="check-ico" />
+                      <span>Gửi video qua Zalo Hotline <strong>0988.123.456</strong> trong vòng 30 phút sau khi ký nhận.</span>
+                    </li>
+                  </ul>
+                </div>
+              </div>
+
+              <div className="policy-card">
+                <div className="policy-card-head">
+                  <span className="policy-step-num">03</span>
+                  <h4>Chính sách giải quyết rủi ro</h4>
+                </div>
+                <div className="policy-card-content">
+                  <p className="policy-p">Nếu không may cá thể bị sốc nhiệt hoặc tử vong trong quá trình vận chuyển, quý khách được chọn 1 trong 2 phương án ngay lập tức:</p>
+                  <div className="warranty-options-grid">
+                    <div className="warranty-option-card">
+                      <div className="option-badge">Lựa chọn 1</div>
+                      <h5>Gửi Bù Bé Mới Miễn Phí</h5>
+                      <p>Shop gửi ngay 1 cá thể cùng loại tuyển chọn, miễn phí 100% cước xe hỏa tốc lần 2.</p>
+                    </div>
+                    <div className="warranty-option-card">
+                      <div className="option-badge">Lựa chọn 2</div>
+                      <h5>Hoàn Tiền 100%</h5>
+                      <p>Hoàn trả 100% số tiền đơn hàng qua chuyển khoản ngân hàng ngay trong 2 giờ làm việc.</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           )}
 
+          {/* TAB 3: TERMS & CITES COMPLIANCE */}
           {activePolicy === 'terms' && (
-            <div>
-              <h4 style={{ color: '#047857', marginTop: 0 }}>1. Nguồn gốc sinh sản nhân tạo (Captive-Bred - CB)</h4>
-              <p>
-                Frog Store cam kết <strong>100% cá thể ếch cảnh cung cấp đều là dòng sinh sản nhân tạo (Captive-Bred - CB)</strong> qua nhiều thế hệ từ các trang trại lưỡng cư uy tín, được thuần hóa với môi trường nhân tạo và quen ăn mồi nhân tạo (cám cá hồi, dế nuôi, sâu canxi, gián Dubia).
-              </p>
-              <p>
-                Chúng tôi tuyệt đối <strong>nói không với việc săn bắt, khai thác trái phép động vật hoang dã tự nhiên (Wild-Caught)</strong> nhằm bảo tồn hệ sinh thái nguyên sinh.
-              </p>
+            <div className="policy-content-stack">
+              <div className="policy-callout-box blue-box">
+                <FileText size={20} className="callout-icon" />
+                <div>
+                  <strong>Tuân thủ Công ước CITES Phụ lục II:</strong> 100% cá thể tại Frog Store thuộc dòng sinh sản nhân tạo (Captive-Bred - CB), có giấy chứng nhận nguồn gốc và xuất hóa đơn vật nuôi cảnh hợp pháp.
+                </div>
+              </div>
 
-              <h4 style={{ color: '#047857' }}>2. Tuân thủ Công ước CITES &amp; Quy định pháp luật</h4>
-              <p>
-                Đối với các chi thuộc danh mục kiểm soát theo Công ước CITES (như <em>Dendrobates</em>, <em>Phyllobates</em> - CITES Phụ lục II):
-              </p>
-              <ul>
-                <li>Mọi mẫu vật nhập khẩu và nhân giống đều tuân thủ hệ thống kiểm soát nguồn gốc và giấy kiểm dịch thú y hợp lệ.</li>
-                <li>Vật nuôi cảnh được phân phối nội địa phục vụ đam mê Terrarium sinh thái và giáo dục khoa học, không dùng vào mục đích khai thác trái phép.</li>
-                <li>Phạm vi giao hàng: Toàn quốc qua xe khách chuyên tuyến hoặc chuyển phát nhanh hỏa tốc.</li>
-              </ul>
+              <div className="policy-card">
+                <div className="policy-card-head">
+                  <span className="policy-step-num">01</span>
+                  <h4>Nguồn gốc sinh sản nhân tạo (Captive-Bred - CB)</h4>
+                </div>
+                <div className="policy-card-content">
+                  <p className="policy-p">
+                    Frog Store cam kết tuyệt đối <strong>nói không với việc săn bắt, khai thác trái phép động vật hoang dã tự nhiên (Wild-Caught)</strong>.
+                  </p>
+                  <ul className="policy-check-list">
+                    <li>
+                      <CheckCircle2 size={16} className="check-ico" />
+                      <span>100% ếch cảnh là dòng F nhân giống trong môi trường nuôi nhốt kiểm soát từ các trại lưỡng cư uy tín.</span>
+                    </li>
+                    <li>
+                      <CheckCircle2 size={16} className="check-ico" />
+                      <span>Đã thuần hóa quen ăn thức ăn nhân tạo: cám viên dinh dưỡng, dế nuôi sinh học, ruồi giấm không cánh, gián Dubia.</span>
+                    </li>
+                  </ul>
+                </div>
+              </div>
 
-              <h4 style={{ color: '#047857' }}>3. Khuyến nghị an toàn sinh học</h4>
-              <p>
-                Lưỡng cư có làn da thẩm thấu màng mỏng rất nhạy cảm. Người nuôi cần rửa tay sạch bằng nước không chứa clo hoặc xà phòng trước và sau khi chạm vào chuồng nuôi. Tránh chạm vào mắt, miệng hoặc vết thương hở sau khi chăm sóc bất kỳ loài vật nuôi nào.
-              </p>
+              <div className="policy-card">
+                <div className="policy-card-head">
+                  <span className="policy-step-num">02</span>
+                  <h4>Cơ sở khoa học về độc tố &amp; An toàn sinh học (L.A. Zoo)</h4>
+                </div>
+                <div className="policy-card-content">
+                  <ul className="policy-check-list">
+                    <li>
+                      <CheckCircle2 size={16} className="check-ico" />
+                      <span>
+                        <strong>Cơ chế độc tố:</strong> Theo Hiệp hội Vườn thú &amp; Thủy cung Los Angeles (L.A. Zoo), ếch phi tiêu ngoài tự nhiên tích lũy alkaloid qua nguồn mồi kiến rừng bản địa. Khi nuôi sinh sản nhân tạo ăn mồi nuôi thiếu hụt alkaloid, cá thể <strong>không tự tổng hợp được độc tố</strong>.
+                      </span>
+                    </li>
+                    <li>
+                      <CheckCircle2 size={16} className="check-ico" />
+                      <span>
+                        <strong>Tiếp xúc an toàn:</strong> Dù không có độc, người nuôi vẫn cần đeo găng tay hoặc rửa tay sạch bằng nước không chứa clo trước và sau khi chạm chuồng nuôi để bảo vệ màng da thẩm thấu mỏng manh của ếch.
+                      </span>
+                    </li>
+                  </ul>
+                </div>
+              </div>
+
+              <div className="policy-card">
+                <div className="policy-card-head">
+                  <span className="policy-step-num">03</span>
+                  <h4>Phạm vi phân phối &amp; Pháp lý nội địa</h4>
+                </div>
+                <div className="policy-card-content">
+                  <p className="policy-p">
+                    Vật nuôi cảnh được phân phối toàn quốc phục vụ đam mê Terrarium sinh thái, bán cạn và nghiên cứu giáo dục khoa học lưỡng cư học, tuân thủ đầy đủ quy định kiểm dịch thú y Việt Nam.
+                  </p>
+                </div>
+              </div>
             </div>
           )}
         </div>
 
-        {/* Footer */}
-        <div style={{ marginTop: 16, paddingTop: 12, borderTop: '1px solid #e2e8f0', display: 'flex', justifyContent: 'flex-end' }}>
-          <button className="btn-detail" onClick={onClose} style={{ padding: '8px 20px' }}>
+        {/* Polished Bottom Bar */}
+        <div className="policy-modal-footer">
+          <div className="policy-footer-badge">
+            <ShieldCheck size={16} color="#059669" />
+            <span>Bảo chứng bởi Frog Store Việt Nam • Hotline: 0988.123.456</span>
+          </div>
+          <button className="policy-btn-confirm" onClick={onClose}>
             Đã Hiểu &amp; Đóng
           </button>
         </div>
@@ -174,4 +330,3 @@ export const PolicyModal: React.FC<PolicyModalProps> = ({
     </div>
   )
 }
-
