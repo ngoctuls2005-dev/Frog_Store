@@ -22,3 +22,4 @@ for u in urls:
                 print(" ", img)
     except Exception as e:
         print(f"Error {u}: {e}")
+

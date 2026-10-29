@@ -194,6 +194,7 @@ app.get('/categories', async (c) => {
      GROUP BY c.id 
      ORDER BY c.id`
   ).all<Category>()
+  c.header('Cache-Control', 'public, max-age=60, s-maxage=300, stale-while-revalidate=600')
   return c.json(results)
 })
 
@@ -262,6 +263,7 @@ app.get('/products', async (c) => {
     }
     return p
   })
+  c.header('Cache-Control', 'public, max-age=60, s-maxage=300, stale-while-revalidate=600')
   return c.json(parsed)
 })
 
@@ -339,6 +341,7 @@ app.get('/products/:idOrSlug', async (c) => {
     }
   }
 
+  c.header('Cache-Control', 'public, max-age=60, s-maxage=300, stale-while-revalidate=600')
   return c.json(product)
 })
 
@@ -372,6 +375,7 @@ app.get('/ai/frogs/knowledge', async (c) => {
     }
   })
 
+  c.header('Cache-Control', 'public, max-age=120, s-maxage=600, stale-while-revalidate=1200')
   return c.json({
     title: 'Frog Store Herpetology AI Knowledge Base',
     total_species: species.length,

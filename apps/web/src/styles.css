@@ -3904,3 +3904,130 @@ footer {
     padding-right: 16px;
   }
 }
+
+/* ========================================================
+   UI/UX V4: PERFORMANCE (CONTENT-VISIBILITY) & TEXT SELECTION PROTECTION
+   Chặn bôi đen/copy các phần tử UI, nút bấm, nhãn mác, hình ảnh
+   Chỉ cho phép bôi đen copy nội dung thiết yếu (mã đơn, hotline, tên khoa học, mô tả)
+   ======================================================== */
+
+/* Content visibility auto for catalog cards to accelerate rendering & scroll fps */
+.card {
+  content-visibility: auto;
+  contain-intrinsic-size: 300px 380px;
+}
+
+/* Chặn bôi đen toàn bộ các nút bấm, navigation, controls, headers, badges, tabs, cards, tables */
+.topbar,
+.announcement-bar,
+.hero,
+.category-tabs,
+.tab-btn,
+.filter-bar,
+.search-bar .search-icon,
+.btn-search-clear,
+.btn-clear-search-pill,
+.card-img-wrap,
+.card-meta,
+.card-category,
+.card-size,
+.card-habitat-badge,
+.card-btn,
+.badge-featured,
+.badge,
+.tag,
+.species-tags-row,
+.habitat-tag,
+.difficulty-tag,
+.size-stage-tag,
+.pricing-box,
+.stock-indicator,
+.action-row,
+.qty-picker,
+.btn-add-cart-large,
+.btn-buy-now-large,
+.spec-badge-card,
+.quick-spec-grid,
+.climate-gauge-card,
+.climate-header,
+.gauge-top-label,
+.gauge-scale,
+.gauge-sub-pill,
+.detail-gallery-card,
+.gallery-caption-bar,
+.tabs-header-bar,
+.tab-item-btn,
+.overview-spec-table .cell-th,
+.enclosure-cards-grid .enc-card h4,
+.diet-guidelines-grid .guideline-card h5,
+.food-tags-cloud,
+.sticky-mobile-buy-bar,
+.btn-back-pill,
+.btn-share-pill,
+.breadcrumb-trail,
+.footer,
+.footer-col h3,
+.footer-bottom,
+.frog-ai-fab,
+.chat-panel-header,
+.chat-quick-prompts,
+.btn-quick-prompt,
+.btn-chat-send,
+.quiz-container,
+.quiz-header,
+.quiz-option-card,
+.quiz-progress-bar,
+.policy-modal-header,
+.policy-tab-bar,
+.policy-tab-item,
+.policy-modal-footer,
+.policy-btn-confirm,
+.policy-step-num,
+.policy-footer-badge,
+.order-header .status-badge,
+.modal-header,
+.modal-close,
+button,
+.btn {
+  -webkit-user-select: none !important;
+  -moz-user-select: none !important;
+  -ms-user-select: none !important;
+  user-select: none !important;
+}
+
+/* Chặn kéo thả hình ảnh (Ghost drag image) và chặn bôi đen ảnh trên toàn trang */
+img {
+  -webkit-user-drag: none !important;
+  -khtml-user-drag: none !important;
+  -moz-user-drag: none !important;
+  -o-user-drag: none !important;
+  user-drag: none !important;
+  -webkit-user-select: none !important;
+  user-select: none !important;
+}
+
+/* Các vùng THỰC SỰ CẦN THIẾT được phép bôi đen và sao chép dễ dàng */
+input,
+textarea,
+[contenteditable="true"],
+.selectable-text,
+.order-code-text,
+.order-code-box,
+.order-code,
+.species-scientific,
+.species-scientific em,
+.species-title,
+.species-short-desc,
+.tab-pane,
+.cell-td,
+.enc-card .highlight-text,
+.enc-card .sub-desc,
+.policy-card-content,
+.policy-p,
+.chat-bubble,
+.copyable-hotline {
+  -webkit-user-select: text !important;
+  -moz-user-select: text !important;
+  -ms-user-select: text !important;
+  user-select: text !important;
+}

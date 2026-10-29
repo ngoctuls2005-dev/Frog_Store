@@ -27,3 +27,4 @@ for p in img_paths:
         print(f"Downloaded {fname}: size={img.size}, bytes={os.path.getsize(local_path)}")
     except Exception as e:
         print(f"Failed {p}: {e}")
+

@@ -18,3 +18,4 @@ try:
             print(' ', img)
 except Exception as e:
     print('Error:', e)
+

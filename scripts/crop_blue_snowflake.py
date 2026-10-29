@@ -30,3 +30,4 @@ cropped = img.crop((c_left, c_top, c_right, c_bottom))
 cropped.thumbnail((900, 900), Image.Resampling.LANCZOS)
 cropped.save('temp_frogs/blue_snowflake_preview.jpg', quality=85, optimize=True)
 print("Saved cropped blue_snowflake_preview.jpg:", cropped.size)
+

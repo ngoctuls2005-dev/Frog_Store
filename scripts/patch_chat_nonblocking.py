@@ -76,3 +76,4 @@ if '/* Non-blocking Chat Panel on Desktop */' not in css:
     print("✓ Added non-blocking chat panel styles to styles.css")
 
 print("FrogAiChatbot non-blocking patch completed!")
+
