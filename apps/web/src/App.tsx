@@ -689,40 +689,39 @@ export default function App() {
         </div>
       </header>
 
-      {/* 3. Hero Banner (Chỉ hiển thị tại trang chủ, không lặp lại ở trang chi tiết) */}
+      {/* 3. Compact Hero Banner (Tối ưu chiều cao ~190px giúp hiển thị sản phẩm ngay màn hình đầu) */}
       {!activeDetailSlug && (
-        <section className="hero">
+        <section className="hero hero-compact">
           <div className="hero-content">
-            <div className="hero-pill">
-              <Sparkles size={16} />
-              <span>Thế Giới Lưỡng Cư Nhập Khẩu & Nhân Giống Thuần</span>
+            <div className="hero-badge-row">
+              <div className="hero-pill">
+                <Sparkles size={14} />
+                <span>Thế Giới Lưỡng Cư Nhập Khẩu &amp; Nhân Giống Thuần Chuẩn</span>
+              </div>
+              <button className="btn-hero-quiz-compact" onClick={handleStartQuiz} title="Trắc nghiệm 30 giây tìm ếch phù hợp">
+                <Sparkles size={14} />
+                <span>🎯 Trợ Thủ Tìm Ếch (Quiz 30s)</span>
+              </button>
             </div>
-            <h2>THẾ GIỚI ẾCH CẢNH SỐNG ĐẲNG CẤP</h2>
-            <p>
-              Chuyên cung cấp các dòng ếch cảnh Pacman, Ếch Cây, Ếch Phi Tiêu Độc và các loài lưỡng cư
-              quý hiếm. Chuẩn giống 100%, thuần ăn mồi, giá thị trường chuẩn và tư vấn trọn đời.
+
+            <h2 className="hero-title-compact">THẾ GIỚI ẾCH CẢNH SỐNG ĐẲNG CẤP</h2>
+            <p className="hero-desc-compact">
+              Bách khoa &amp; cung cấp 26 loài ếch Pacman, Ếch Cây, Phi Tiêu Độc thuần chủng khỏe mạnh, bảo hành sống 100% giao hỏa tốc toàn quốc.
             </p>
 
-            <div className="hero-features">
-              <div className="feature-tag">
-                <ShieldCheck size={18} color="#4ade80" />
-                <span>Bảo hành sống 100% khi nhận hàng</span>
+            <div className="hero-features-compact">
+              <div className="feature-tag-compact">
+                <ShieldCheck size={15} color="#4ade80" />
+                <span>Bảo hành sống 100%</span>
               </div>
-              <div className="feature-tag">
-                <Truck size={18} color="#60a5fa" />
-                <span>Thùng xốp giữ ẩm giao hỏa tốc toàn quốc</span>
+              <div className="feature-tag-compact">
+                <Truck size={15} color="#60a5fa" />
+                <span>Thùng xốp giữ ẩm hỏa tốc</span>
               </div>
-              <div className="feature-tag">
-                <HeartPulse size={18} color="#f472b6" />
-                <span>Đã thuần cám & mồi, ăn khỏe không tật lỗi</span>
+              <div className="feature-tag-compact">
+                <HeartPulse size={15} color="#f472b6" />
+                <span>Thuần cám &amp; mồi sinh học</span>
               </div>
-            </div>
-
-            <div style={{ marginTop: 20 }}>
-              <button className="btn-hero-quiz" onClick={handleStartQuiz}>
-                <Sparkles size={18} />
-                <span>🎯 Trợ Thủ Tìm Ếch Phù Hợp (Quiz 30 Giây)</span>
-              </button>
             </div>
           </div>
         </section>
@@ -858,21 +857,7 @@ export default function App() {
               </div>
             </div>
 
-            {/* Search Result Banner */}
-            {search && (
-              <div className="search-result-banner">
-                <span>
-                  🔍 Tìm thấy <strong>{products.length}</strong> loài ếch khớp với từ khóa "<em>{search}</em>"
-                </span>
-                <button
-                  type="button"
-                  className="btn-clear-search-pill"
-                  onClick={() => handleSearchChange('')}
-                >
-                  ✕ Xóa tìm kiếm
-                </button>
-              </div>
-            )}
+{/* Single search feedback bar rendered above grid */}
           </section>
 
           {/* Products Grid */}

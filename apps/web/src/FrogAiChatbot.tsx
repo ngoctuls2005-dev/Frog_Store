@@ -44,6 +44,19 @@ export const FrogAiChatbot: React.FC<FrogAiChatbotProps> = ({
   const [isTyping, setIsTyping] = useState(false)
   const [knowledgeBase, setKnowledgeBase] = useState<any[]>([])
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const chatPanelRef = useRef<HTMLDivElement>(null)
+
+  // Click outside to collapse chat and prevent blocking buttons/details
+  useEffect(() => {
+    if (!isOpen) return
+    const handleClickOutside = (e: MouseEvent) => {
+      if (chatPanelRef.current && !chatPanelRef.current.contains(e.target as Node)) {
+        setIsOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [isOpen])
 
   // Fetch AI Knowledge Base once on mount
   useEffect(() => {
@@ -185,7 +198,7 @@ export const FrogAiChatbot: React.FC<FrogAiChatbotProps> = ({
 
       {/* Chat Window Panel */}
       {isOpen && (
-        <div className="frog-ai-chat-panel fade-in-up">
+        <div className="frog-ai-chat-panel fade-in-up" ref={chatPanelRef}>
           {/* Header */}
           <div className="chat-panel-header">
             <div className="header-bot-info">

@@ -282,12 +282,10 @@ body {
 
 .category-tabs {
   display: flex;
-  gap: 10px;
-  overflow-x: auto;
-  padding-bottom: 8px;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding-bottom: 4px;
   padding-top: 2px;
-  scrollbar-width: none;
-  -ms-overflow-style: none;
 }
 
 .category-tabs::-webkit-scrollbar {
@@ -3740,4 +3738,169 @@ footer {
 .brand-icon {
   display: inline-block;
   transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* ========================================================
+   UI/UX V3 REFINEMENTS (COMPACT HERO, CALM FAB, SAFE LAYOUT)
+   ======================================================== */
+.hero.hero-compact {
+  padding: 24px 20px 20px 20px;
+  background: linear-gradient(135deg, #052e16 0%, #14532d 60%, #15803d 100%);
+  min-height: auto;
+}
+
+.hero-badge-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+}
+
+.hero-title-compact {
+  font-size: 1.65rem;
+  font-weight: 800;
+  margin: 0 0 6px 0;
+  letter-spacing: -0.02em;
+  line-height: 1.25;
+  color: #ffffff;
+}
+
+.hero-desc-compact {
+  font-size: 0.92rem;
+  color: #dcfce7;
+  margin: 0 0 14px 0;
+  max-width: 680px;
+  margin-left: auto;
+  margin-right: auto;
+  line-height: 1.45;
+}
+
+.hero-features-compact {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.feature-tag-compact {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.82rem;
+  color: #f0fdf4;
+  background: rgba(255, 255, 255, 0.08);
+  padding: 4px 12px;
+  border-radius: 9999px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.btn-hero-quiz-compact {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #f59e0b;
+  color: #1c1917;
+  font-weight: 700;
+  font-size: 0.8rem;
+  padding: 4px 14px;
+  border-radius: 9999px;
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+  transition: all 0.2s;
+}
+
+.btn-hero-quiz-compact:hover {
+  background: #fbbf24;
+  transform: translateY(-1px);
+}
+
+/* Calm, Elegant Chat FAB (No intrusive glowing, natural shadow) */
+.frog-ai-fab {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 9998;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 18px;
+  background: #065f46;
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 9999px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.16);
+  font-weight: 600;
+  font-size: 0.88rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.frog-ai-fab:hover,
+.frog-ai-fab:focus-visible {
+  background: #047857;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.22);
+  outline: none;
+}
+
+.fab-online-dot {
+  width: 7px;
+  height: 7px;
+  background: #34d399;
+  border-radius: 50%;
+  box-shadow: none !important;
+}
+
+/* Safe layout on Frog Detail View to prevent chatbot overlapping */
+.detail-container {
+  padding-bottom: 96px !important;
+}
+
+.climate-gauge-card {
+  margin-bottom: 28px !important;
+}
+
+@media (min-width: 1024px) {
+  .climate-gauge-card {
+    margin-right: 0;
+  }
+}
+
+/* Responsive adjustment for Category Tabs */
+@media (max-width: 640px) {
+  .category-tabs {
+    flex-wrap: nowrap !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+    scrollbar-color: #cbd5e1 transparent;
+  }
+}
+
+/* Non-blocking Chat Panel on Desktop */
+.frog-ai-chat-panel {
+  width: 330px !important;
+  height: 420px !important;
+  max-height: calc(100vh - 120px) !important;
+  bottom: 18px !important;
+  right: 18px !important;
+  box-shadow: 0 16px 36px -8px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(0, 0, 0, 0.08) !important;
+}
+
+/* Detail page safe spacing so FAB never blocks humidity gauge */
+.frog-detail-view {
+  padding-bottom: 110px !important;
+}
+
+.climate-gauge-card {
+  margin-bottom: 36px !important;
+}
+
+@media (min-width: 1024px) {
+  .gauge-grid {
+    padding-right: 16px;
+  }
 }
