@@ -227,6 +227,74 @@ async function req<T>(path: string, init: RequestInit = {}): Promise<T> {
   return res.json()
 }
 
+type FrogChatResponse = { suggestedSlug?: string; suggestedName?: string }
+
+async function frogChatStream(
+  data: { messages: Array<{ role: 'user' | 'assistant'; content: string }>; currentProductSlug?: string },
+  onToken: (text: string) => void,
+): Promise<FrogChatResponse> {
+  const token = getStoredToken()
+  const headers: Record<string, string> = {
+    'content-type': 'application/json',
+    'x-cart-id': cartId,
+  }
+  if (token) headers.authorization = `Bearer ${token}`
+
+  const res = await fetch('/api/ai/chat', {
+    method: 'POST',
+    headers,
+    body: JSON.stringify(data),
+  })
+
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => null)
+    throw new Error(errorData?.error || `${res.status} ${res.statusText}`)
+  }
+
+  if (!res.headers.get('content-type')?.includes('text/event-stream')) {
+    const result = await res.json()
+    if (typeof result?.answer === 'string') onToken(result.answer)
+    return { suggestedSlug: result?.suggestedSlug, suggestedName: result?.suggestedName }
+  }
+
+  if (!res.body) throw new Error('Kết nối Trợ lý AI bị gián đoạn. Bạn thử lại nhé.')
+
+  const reader = res.body.getReader()
+  const decoder = new TextDecoder()
+  let buffer = ''
+  let result: FrogChatResponse | null = null
+
+  const consumeEvent = (event: string) => {
+    const dataLine = event.split(/\r?\n/).find((line) => line.startsWith('data:'))
+    if (!dataLine) return
+    const data = dataLine.slice(5).trim()
+    if (data === '[DONE]') return
+    const message = JSON.parse(data)
+    if (message.type === 'token' && typeof message.text === 'string') onToken(message.text)
+    if (message.type === 'error') throw new Error(message.message || 'Trợ lý AI đang bận. Bạn vui lòng thử lại.')
+    if (message.type === 'done') result = message
+  }
+
+  try {
+    while (!result) {
+      const { done, value } = await reader.read()
+      if (done) break
+      buffer += decoder.decode(value, { stream: true })
+      const events = buffer.split(/\r?\n\r?\n/)
+      buffer = events.pop() || ''
+      for (const event of events) consumeEvent(event)
+    }
+    if (buffer.trim() && !result) consumeEvent(buffer)
+    if (!result) throw new Error('Trợ lý chưa hoàn tất câu trả lời. Bạn vui lòng thử lại.')
+    return result
+  } catch (error) {
+    try { await reader.cancel() } catch {}
+    throw error
+  } finally {
+    reader.releaseLock()
+  }
+}
+
 export const api = {
   // Public catalog
   categories: () => req<Category[]>('/categories'),
@@ -244,6 +312,7 @@ export const api = {
   productDetail: (idOrSlug: string | number) => req<Product>(`/products/${idOrSlug}`),
   aiKnowledge: () => req<any>('/ai/frogs/knowledge'),
   aiFrogDetail: (slug: string, format?: string) => req<any>(`/ai/frogs/${slug}${format ? `?format=${format}` : ''}`),
+  frogChatStream,
 
   // Cart (Persistent when logged in, KV when guest)
   cart: () => req<Cart>('/cart'),

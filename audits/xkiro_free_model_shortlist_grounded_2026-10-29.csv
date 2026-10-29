@@ -1,0 +1,3 @@
+﻿model_id,case,http_status,first_token_ms,total_ms,answer_chars,refusal_detected,code_leak_detected,mixed_refusal_pass,error_status,error_code,error_type,answer
+cohere/command-a,care,200,5243,10550,59,,,,,,,"Rất tiếc, thông tin này không có sẵn trong dữ liệu website."
+cohere/command-a,recommend,200,7124,30194,255,,,,,,WallTimeout,"- **Ếch Pacman Xanh (Green Pacman)**: Đây là loài ếch cảnh phù hợp cho người mới chơi, với mức độ chăm sóc dễ dàng. - **Nhiệt độ**: Duy trì nhiệt độ ban ngày từ 24–28°C và ban đêm không dưới 20°C. - **Độ ẩm**: Giữ độ ẩm trong khoảng 50–70%, phun sương nhẹ"

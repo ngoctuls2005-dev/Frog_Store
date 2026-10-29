@@ -166,6 +166,24 @@ Frog_Store/
    python tests/verify_ui_06_production_e2e.py
    ```
 
+### Cấu hình Trợ Lý Ếch AI
+
+Chatbot gọi model `qwen/qwen3.8-omni-flash:free` qua API xKiro từ Cloudflare Worker. Trợ lý chỉ trả lời về loài ếch trong danh mục Frog Store, thông tin sản phẩm, hướng dẫn chăm sóc và gợi ý chọn loài. Phạm vi được kiểm tra ở backend trước khi gửi câu hỏi tới model.
+
+- **Chạy local**: tạo `apps/api/.dev.vars` với nội dung `XKIRO_API_KEY=...`.
+- **Cloudflare**: đặt API key bằng lệnh sau trước khi triển khai:
+  ```bash
+  npx wrangler secret put XKIRO_API_KEY --config apps/api/wrangler.toml
+  ```
+
+API key chỉ được lưu dưới dạng secret ở Worker, không đưa vào frontend hoặc Git.
+
+Để kiểm tra phản hồi trong phạm vi và các trường hợp từ chối, chạy API local ở terminal thứ nhất (`npm run dev -w apps/api`), sau đó chạy ở terminal thứ hai:
+
+```bash
+python tests/verify_chatbot_scope.py
+```
+
 ---
 
 ## 🚀 Hướng Dẫn Triển Khai Lên Cloudflare (Deploy)

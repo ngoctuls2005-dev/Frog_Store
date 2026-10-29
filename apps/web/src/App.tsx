@@ -95,11 +95,7 @@ export default function App() {
   // Hash Routing for Frog Detail Page
   const [activeDetailSlug, setActiveDetailSlug] = useState<string | null>(null)
 
-  // Interactive Frog Matcher Quiz State
-  const [quizOpen, setQuizOpen] = useState(false)
-  const [quizStep, setQuizStep] = useState(1)
-  const [quizAnswers, setQuizAnswers] = useState<{ exp?: string; habitat?: string; care?: string }>({})
-  const [quizRecommendation, setQuizRecommendation] = useState<Product | null>(null)
+
 
   // Modals & Drawers
   const [policyOpen, setPolicyOpen] = useState(false)
@@ -267,7 +263,6 @@ export default function App() {
     setMyOrdersOpen(false)
     setProfileOpen(false)
     setAdminPortalOpen(false)
-    setQuizOpen(false)
     setAuthOpen(false)
     setCartOpen(false)
     setCheckoutOpen(false)
@@ -276,36 +271,6 @@ export default function App() {
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
-  // Quiz Handlers
-  const handleStartQuiz = () => {
-    setQuizStep(1)
-    setQuizAnswers({})
-    setQuizRecommendation(null)
-    setQuizOpen(true)
-  }
-
-  const handleAnswerQuiz = (key: 'exp' | 'habitat' | 'care', value: string) => {
-    const nextAnswers = { ...quizAnswers, [key]: value }
-    setQuizAnswers(nextAnswers)
-    if (quizStep < 3) {
-      setQuizStep(quizStep + 1)
-    } else {
-      let match: Product | undefined
-      if (nextAnswers.exp === 'beginner') {
-        match = products.find((p) => p.slug === 'pacman-green' || p.slug === 'tree-whites-dumpy')
-      } else if (nextAnswers.habitat === 'arboreal') {
-        match = products.find((p) => p.slug === 'tree-red-eyed' || p.slug === 'tree-amazon-milk')
-      } else if (nextAnswers.exp === 'expert' || nextAnswers.care === 'high') {
-        match = products.find((p) => p.slug === 'dart-azureus' || p.slug === 'dart-bumblebee')
-      } else if (nextAnswers.habitat === 'paludarium') {
-        match = products.find((p) => p.slug === 'mossy-vietnamese' || p.slug === 'fire-bellied-oriental')
-      } else {
-        match = products.find((p) => p.slug === 'pacman-albino') || products[0]
-      }
-      setQuizRecommendation(match || products[0] || null)
-      setQuizStep(4)
-    }
-  }
 
   // Cart operations
   const runCart = (p: Promise<Cart>) =>
@@ -705,10 +670,7 @@ export default function App() {
                 <Sparkles size={14} />
                 <span>Thế Giới Lưỡng Cư Nhập Khẩu &amp; Nhân Giống Thuần Chuẩn</span>
               </div>
-              <button className="btn-hero-quiz-compact" onClick={handleStartQuiz} title="Trắc nghiệm 30 giây tìm ếch phù hợp">
-                <Sparkles size={14} />
-                <span>🎯 Trợ Thủ Tìm Ếch (Quiz 30s)</span>
-              </button>
+
             </div>
 
             <h2 className="hero-title-compact">THẾ GIỚI ẾCH CẢNH SỐNG ĐẲNG CẤP</h2>
@@ -1595,160 +1557,7 @@ export default function App() {
         </div>
       )}
 
-      {/* 12b. INTERACTIVE FROG MATCHER QUIZ MODAL */}
-      {quizOpen && (
-        <div className="modal-overlay" onClick={() => setQuizOpen(false)}>
-          <div className="modal-card quiz-modal-card" onClick={(e) => e.stopPropagation()}>
-            <button className="modal-close" onClick={() => setQuizOpen(false)}>✕</button>
-
-            <div className="quiz-container">
-              <div className="quiz-header">
-                <div className="quiz-badge">
-                  <Sparkles size={16} /> Trợ Thủ Tư Vấn Sinh Học
-                </div>
-                <h2>Tìm Loài Ếch Hoàn Hảo Dành Cho Bạn</h2>
-                <div className="quiz-progress-bar">
-                  <div
-                    className="quiz-progress-fill"
-                    style={{ width: quizStep <= 3 ? `${(quizStep / 3) * 100}%` : "100%" }}
-                  ></div>
-                </div>
-                <span className="quiz-step-label">{quizStep <= 3 ? `Bước ${quizStep} / 3` : "🎯 Kết quả đề xuất"}</span>
-              </div>
-
-              {quizStep === 1 && (
-                <div className="quiz-step-body fade-in">
-                  <h3>1. Bạn đã từng nuôi ếch cảnh hay lưỡng cư bao giờ chưa?</h3>
-                  <div className="quiz-options-list">
-                    <button
-                      className="quiz-opt-btn"
-                      onClick={() => handleAnswerQuiz('exp', 'beginner')}
-                    >
-                      <span className="opt-title">🌱 Chưa bao giờ, mình là người mới bắt đầu</span>
-                      <span className="opt-desc">Cần loài ếch cực kỳ dễ nuôi, trâu bò, ăn tạp, ít tốn công chăm sóc.</span>
-                    </button>
-                    <button
-                      className="quiz-opt-btn"
-                      onClick={() => handleAnswerQuiz('exp', 'intermediate')}
-                    >
-                      <span className="opt-title">🌿 Đã có chút kinh nghiệm cơ bản</span>
-                      <span className="opt-desc">Muốn thử sức với các loài ếch cảnh có hoa văn đẹp, leo trèo hoặc bán cạn.</span>
-                    </button>
-                    <button
-                      className="quiz-opt-btn"
-                      onClick={() => handleAnswerQuiz('exp', 'expert')}
-                    >
-                      <span className="opt-title">💎 Đam mê chuyên sâu, đã có bể Terrarium</span>
-                      <span className="opt-desc">Sẵn sàng nuôi các loài phi tiêu độc, ếch rừng nguyên sinh cần vi khí hậu chuẩn xác.</span>
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {quizStep === 2 && (
-                <div className="quiz-step-body fade-in">
-                  <h3>2. Bạn thích kiểu chuồng nuôi (Terrarium) như thế nào trong phòng?</h3>
-                  <div className="quiz-options-list">
-                    <button
-                      className="quiz-opt-btn"
-                      onClick={() => handleAnswerQuiz('habitat', 'terrestrial')}
-                    >
-                      <span className="opt-title">🏜️ Bể cạn nhỏ gọn, đơn giản</span>
-                      <span className="opt-desc">Hộp nhựa hoặc bể kính nhỏ lót mút xốp hoặc mùn dừa, ếch ngồi yên một chỗ háu ăn.</span>
-                    </button>
-                    <button
-                      className="quiz-opt-btn"
-                      onClick={() => handleAnswerQuiz('habitat', 'arboreal')}
-                    >
-                      <span className="opt-title">🌿 Bể kính dạng đứng trồng nhiều cây xanh</span>
-                      <span className="opt-desc">Ếch bám lá cây, màu sắc nổi bật, thích hợp trang trí bàn làm việc xanh tươi.</span>
-                    </button>
-                    <button
-                      className="quiz-opt-btn"
-                      onClick={() => handleAnswerQuiz('habitat', 'paludarium')}
-                    >
-                      <span className="opt-title">💧 Bể bán cạn Paludarium hoặc có nước</span>
-                      <span className="opt-desc">Có phần nước suối thác chảy và phần cạn phủ rêu đá tự nhiên.</span>
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {quizStep === 3 && (
-                <div className="quiz-step-body fade-in">
-                  <h3>3. Quỹ thời gian chăm sóc hàng ngày của bạn ra sao?</h3>
-                  <div className="quiz-options-list">
-                    <button
-                      className="quiz-opt-btn"
-                      onClick={() => handleAnswerQuiz('care', 'low')}
-                    >
-                      <span className="opt-title">⏳ Khá bận rộn, chỉ ngó qua 2-3 ngày 1 lần</span>
-                      <span className="opt-desc">Thích hợp dòng ếch ăn bữa lớn rồi nằm tiêu hóa vài ngày như Pacman hoặc Dumpy.</span>
-                    </button>
-                    <button
-                      className="quiz-opt-btn"
-                      onClick={() => handleAnswerQuiz('care', 'medium')}
-                    >
-                      <span className="opt-title">🌧️ Có thể xịt ẩm 1-2 lần mỗi ngày</span>
-                      <span className="opt-desc">Dành 5 phút mỗi sáng/tối để phun sương duy trì độ ẩm mát mẻ cho bể cây.</span>
-                    </button>
-                    <button
-                      className="quiz-opt-btn"
-                      onClick={() => handleAnswerQuiz('care', 'high')}
-                    >
-                      <span className="opt-title">🔬 Rất tâm huyết, thích nuôi ấp mồi sống tỉ mỉ</span>
-                      <span className="opt-desc">Sẵn sàng nuôi gián, ruồi giấm và kiểm soát vi khí hậu bằng máy tự động.</span>
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {quizStep === 4 && quizRecommendation && (
-                <div className="quiz-result-body fade-in">
-                  <div className="result-badge">🎉 KẾT QUẢ PHÂN TÍCH CHUYÊN GIA</div>
-                  <h3>Loài Ếch Phù Hợp Nhất Với Bạn Là:</h3>
-
-                  <div className="result-card">
-                    <img src={quizRecommendation.image} alt={quizRecommendation.name} />
-                    <div className="result-info">
-                      <h4>{quizRecommendation.name}</h4>
-                      <p className="res-sci"><em>{quizRecommendation.scientific_name}</em></p>
-                      <div className="res-meta-row">
-                        <span className="res-tag">Độ khó: <strong>{quizRecommendation.difficulty}</strong></span>
-                        <span className="res-tag">Giá: <strong style={{ color: '#059669' }}>{vnd(quizRecommendation.price)}</strong></span>
-                      </div>
-                      <p className="res-desc">{quizRecommendation.description}</p>
-                    </div>
-                  </div>
-
-                  <div className="result-actions">
-                    <button
-                      className="btn-view-match"
-                      onClick={() => {
-                        setQuizOpen(false)
-                        window.location.hash = `#/frogs/${quizRecommendation.slug || quizRecommendation.id}`
-                        setActiveDetailSlug(quizRecommendation.slug || String(quizRecommendation.id))
-                      }}
-                    >
-                      📖 Xem Toàn Bộ Hồ Sơ Sinh Học &amp; Cách Nuôi
-                    </button>
-                    <button
-                      className="btn-add-match"
-                      onClick={() => {
-                        addToCart(quizRecommendation.id)
-                        setQuizOpen(false)
-                      }}
-                    >
-                      🛒 Thêm Ngay Vào Giỏ Hàng
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-
+      
       {/* 13. ADMIN PORTAL MODAL */}
       <AdminPortal
         isOpen={adminPortalOpen}
