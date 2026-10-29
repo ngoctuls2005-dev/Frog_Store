@@ -7,7 +7,8 @@ import {
   ExternalLink,
   ChevronDown,
   Minimize2,
-  Maximize2
+  Maximize2,
+  MessageCircle
 } from 'lucide-react'
 import { api } from './api'
 
@@ -44,26 +45,8 @@ export const FrogAiChatbot: React.FC<FrogAiChatbotProps> = ({
   ])
   const [inputText, setInputText] = useState('')
   const [isTyping, setIsTyping] = useState(false)
-  const [knowledgeBase, setKnowledgeBase] = useState<any[]>([])
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const chatPanelRef = useRef<HTMLDivElement>(null)
-  const hasLoadedKnowledgeRef = useRef(false)
-
-  // PERF-01: Lazy-load AI Knowledge Base only when chat is opened for the first time
-  useEffect(() => {
-    if (isOpen && !hasLoadedKnowledgeRef.current) {
-      hasLoadedKnowledgeRef.current = true
-      api.aiKnowledge()
-        .then((res) => {
-          if (res?.species) {
-            setKnowledgeBase(res.species)
-          }
-        })
-        .catch(() => {
-          hasLoadedKnowledgeRef.current = false
-        })
-    }
-  }, [isOpen])
 
   // Click outside to collapse chat and prevent blocking buttons/details
   useEffect(() => {
@@ -91,7 +74,8 @@ export const FrogAiChatbot: React.FC<FrogAiChatbotProps> = ({
     { label: '👶 Loài nào dễ nuôi cho người mới?', query: 'Tôi là người mới tập nuôi thì nên chọn loài ếch nào dễ nhất?' },
   ]
 
-  const handleSend = (textToSend?: string) => {
+  const handleSend = async (textToSend?: string) => {
+    if (isTyping) return
     const query = (textToSend || inputText).trim()
     if (!query) return
 
@@ -106,79 +90,79 @@ export const FrogAiChatbot: React.FC<FrogAiChatbotProps> = ({
     if (!textToSend) setInputText('')
     setIsTyping(true)
 
-    setTimeout(() => {
-      const q = query.toLowerCase()
-      let reply = ''
-      let suggestedSlug: string | undefined
-      let suggestedName: string | undefined
-
-      if (q.includes('người mới') || q.includes('dễ nuôi') || q.includes('bắt đầu') || q.includes('tập nuôi')) {
-        reply = `🔰 Với người mới bắt đầu (Beginner), Frog Store khuyên nuôi 2 dòng kinh điển sau:\n\n1. 🐸 **Ếch Pacman (Ceratophrys cranwelli):**\n• Cực kỳ dễ chăm, sống cạn, ăn khỏe cám viên hoặc dế/cá mồi.\n• Không cần chuồng lớn, chỉ cần hộp nhựa 30x20cm lót mút xốp hoặc mùn dừa ẩm.\n\n2. 🍃 **Ếch Cây Dumpy (Litoria caerulea):**\n• Tính tình hiền lành, dạn người, có thể leo cành quan sát sinh động.\n• Kháng bệnh rất cao, tuổi thọ lên tới 10-15 năm.`
-        suggestedSlug = 'pacman-green'
-        suggestedName = 'Ếch Pacman Xanh'
-      } else if (q.includes('pacman') || q.includes('thức ăn pacman')) {
-        reply = `🍽️ **Chế độ dinh dưỡng cho Ếch Pacman:**\n• Giai đoạn Baby (3-4cm): Cho ăn 2 ngày/lần. Khẩu phần: Cám Pacman ngâm nở vừa miệng, cá mồi nhỏ hoặc dế ngắt càng sau.\n• Giai đoạn Trưởng thành (>7cm): Cho ăn 4-5 ngày/lần. Thêm trạch nhỏ, gián Dubia, chuột pinky (1 lần/tháng).\n• ⚠️ Lưu ý: Bổ sung bột Canxi + D3 1 lần/tuần để tránh bệnh biến dạng xương MBD!`
-        suggestedSlug = 'pacman-green'
-        suggestedName = 'Ếch Pacman Xanh'
-      } else if (q.includes('độc') || q.includes('phi tiêu') || q.includes('nguy hiểm') || q.includes('poison')) {
-        reply = `🔬 **Về độc tố của Ếch Phi Tiêu Độc (Dendrobatidae):**\n• 100% ếch phi tiêu tại Frog Store là dòng **sinh sản nhân tạo (Captive-Bred)**, tuyệt đối **KHÔNG CÓ ĐỘC**!\n• Ngoài tự nhiên, chúng tích lũy độc qua việc ăn kiến rừng và bọ cánh cứng bản địa. Khi nuôi sinh sản ăn dế và ruồi giấm không cánh, tuyến độc hoàn toàn vô hại.\n• Tuy nhiên, vì da lưỡng cư rất mỏng manh, bạn nên rửa sạch tay trước và sau khi chăm sóc chuồng trại.`
-        suggestedSlug = 'dart-azureus'
-        suggestedName = 'Ếch Phi Tiêu Xanh Azureus'
-      } else if (q.includes('cây') || q.includes('chuồng') || q.includes('bể') || q.includes('terrarium')) {
-        reply = `🌿 **Setup chuồng nuôi ếch cây chuẩn Terrarium:**\n• Kiểu chuồng: Ưu tiên chiều cao (thể tích tối thiểu 45x45x60cm).\n• Phụ kiện: Cành lũa leo trèo, cây lá rộng (Trầu bà, Lan ý, Bromeliad).\n• Vi khí hậu: Nhiệt độ 24-27°C, độ ẩm 75-90%, xịt sương ẩm sáng tối.\n• Khay nước nông sạch đã khử clo để ếch ngâm mình ban đêm.`
-        suggestedSlug = 'tree-red-eyed'
-        suggestedName = 'Ếch Cây Mắt Đỏ'
-      } else if (q.includes('rêu') || q.includes('việt nam')) {
-        reply = `🌲 **Ếch Rêu Việt Nam (Theloderma corticale):**\n• Loài lưỡng cư bản địa quý hiếm của vùng núi cao Bắc Bộ.\n• Ngụy trang hoàn hảo như một tảng rêu đá ẩm ướt nguyên sinh.\n• Môi trường nuôi: Bán cạn (Paludarium) nước mát 20-24°C, dòng chảy nhẹ và nhiều hốc đá ẩn nấp.`
-        suggestedSlug = 'vietnam-mossy'
-        suggestedName = 'Ếch Rêu Việt Nam'
-      } else if (q.includes('canxi') || q.includes('mbd') || q.includes('bệnh') || q.includes('sức khỏe')) {
-        reply = `🩺 **Cẩm nang sức khỏe & Dinh dưỡng vi lượng:**\n• **Bệnh MBD (Mềm xương):** Do thiếu Canxi/D3 hoặc thiếu đèn UVB. Biểu hiện: hàm dưới xẹp, run chân. Cần bổ sung Canxi D3 phủ lên mồi 1-2 lần/tuần.\n• **Nhiễm trùng da (Red leg):** Do nước bẩn, chuồng ẩm mốc đọng amoniac. Cần thay nước định kỳ 2 ngày/lần bằng nước đã khử clo.\n• **Da thẩm thấu:** Tuyệt đối không chạm tay dính xà phòng hoặc muối mồ hôi trực tiếp vào da ếch.`
-      } else {
-        const matched = knowledgeBase.find((k) =>
-          query.includes(k.name?.toLowerCase()) ||
-          query.includes(k.species?.toLowerCase()) ||
-          query.includes(k.genus?.toLowerCase())
-        )
-        if (matched) {
-          reply = `📖 **Thông số sinh học loài ${matched.name}:**\n• Tên khoa học: *${matched.scientific_name}*\n• Môi trường sống: ${matched.natural_habitat || 'Nhiệt đới'}\n• Nhiệt độ thích hợp: ${matched.temp_day_min}°C - ${matched.temp_day_max}°C\n• Độ ẩm tối ưu: ${matched.humidity_min}% - ${matched.humidity_max}%\n• Dinh dưỡng chính: Côn trùng, sâu canxi, dế sạch.\n\nBạn có thể bấm vào liên kết bên dưới để xem hồ sơ và thước đo vi khí hậu chi tiết!`
-          suggestedSlug = matched.slug
-          suggestedName = matched.name
-        } else {
-          reply = `Cảm ơn câu hỏi của bạn! Frog Store cung cấp 26 loài ếch cảnh thuần dưỡng cùng cẩm nang chăm sóc khoa học. Bạn có thể hỏi mình về:\n• Hướng dẫn setup chuồng & độ ẩm\n• Lịch cho ăn & vi chất Canxi/D3\n• Loài phù hợp cho người mới bắt đầu\n• Hoặc chọn các câu hỏi gợi ý bên dưới nhé! 🐸`
+    const botMessageId = String(Date.now() + 1)
+    let hasStartedResponse = false
+    try {
+      const response = await api.frogChatStream({
+        messages: [...messages, userMsg].slice(-6).map((message) => ({
+          role: message.sender === 'user' ? 'user' as const : 'assistant' as const,
+          content: message.text,
+        })),
+        currentProductSlug: currentProductSlug || undefined,
+      }, (text) => {
+        if (!text) return
+        if (!hasStartedResponse) {
+          hasStartedResponse = true
+          setIsTyping(false)
+          setMessages((prev) => [...prev, {
+            id: botMessageId,
+            sender: 'bot',
+            text,
+            time: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
+          }])
+          return
         }
-      }
+        setMessages((prev) => prev.map((message) => message.id === botMessageId
+          ? { ...message, text: message.text + text }
+          : message))
+      })
 
-      const botMsg: Message = {
-        id: String(Date.now() + 1),
-        sender: 'bot',
-        text: reply,
-        time: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
-        suggestedSlug,
-        suggestedName
+      setMessages((prev) => prev.map((message) => message.id === botMessageId
+        ? { ...message, suggestedSlug: response.suggestedSlug, suggestedName: response.suggestedName }
+        : message))
+      if (!hasStartedResponse) {
+        setMessages((prev) => [...prev, {
+          id: botMessageId,
+          sender: 'bot',
+          text: 'Mình chưa có câu trả lời cho câu hỏi này. Bạn thử hỏi lại nhé.',
+          time: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
+        }])
       }
-
-      setMessages((prev) => [...prev, botMsg])
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Trợ lý đang bận. Bạn vui lòng thử lại sau nhé.'
+      if (hasStartedResponse) {
+        setMessages((prev) => prev.map((item) => item.id === botMessageId
+          ? { ...item, text: `${item.text}\n\n${message}` }
+          : item))
+      } else {
+        setMessages((prev) => [...prev, {
+          id: botMessageId,
+          sender: 'bot',
+          text: message,
+          time: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
+        }])
+      }
+    } finally {
       setIsTyping(false)
-    }, 600)
+    }
   }
 
   return (
     <>
-      {/* Floating Action Button (FAB) - Compact & Elegant */}
+      {/* Floating Action Button (FAB) - Compact Circular Badge (Không che khuất nội dung mua hàng) */}
       {!isOpen && (
         <button
-          className="frog-ai-fab"
+          className="frog-ai-fab-round"
           aria-label="Mở Trợ Lý Ếch AI tư vấn sinh học"
           onClick={() => {
             setIsOpen(true)
             setIsMinimized(false)
           }}
-          title="Mở Trợ Lý Ếch AI tư vấn sinh học"
+          title="Hỏi Trợ Lý Ếch AI (Bách khoa 26 loài ếch)"
         >
-          <Bot size={20} className="fab-bot-icon" />
-          <span className="fab-label">Hỏi Trợ Lý Ếch AI</span>
-          <span className="fab-online-dot"></span>
+          <Bot size={22} className="fab-bot-icon" />
+          <span className="fab-hover-tooltip">Hỏi Trợ Lý Ếch AI</span>
+          <span className="fab-online-dot-round"></span>
         </button>
       )}
 

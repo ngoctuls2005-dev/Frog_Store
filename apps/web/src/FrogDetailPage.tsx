@@ -177,11 +177,23 @@ export const FrogDetailPage: React.FC<FrogDetailPageProps> = ({
               </span>
               <span className="size-stage-tag">{product.size_stage}</span>
             </div>
-            <h1 className="species-title">{product.name}</h1>
-            <p className="species-scientific">
-              Tên khoa học: <em>{product.scientific_name}</em>
-              {d?.family && <span className="family-badge"> (Họ {d.family})</span>}
-            </p>
+            {(() => {
+              const morphMatch = product.name.match(/^(.*?)\s*\((.*?)\)$/)
+              const mainName = morphMatch ? morphMatch[1].trim() : product.name
+              const morphBadge = morphMatch ? morphMatch[2].trim() : product.morph
+              return (
+                <div className="species-title-wrap">
+                  <h1 className="species-title">{mainName}</h1>
+                  {morphBadge && (
+                    <span className="species-morph-badge">✨ Biến thể: {morphBadge}</span>
+                  )}
+                  <p className="species-scientific">
+                    Tên khoa học: <em>{product.scientific_name}</em>
+                    {d?.family && <span className="family-badge"> (Họ {d.family})</span>}
+                  </p>
+                </div>
+              )
+            })()}
           </div>
 
           <p className="species-short-desc">{product.description}</p>

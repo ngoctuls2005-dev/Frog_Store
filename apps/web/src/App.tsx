@@ -588,10 +588,10 @@ export default function App() {
         ))}
       </div>
 
-      {/* 1. Announcement Bar */}
+      {/* 1. Announcement Bar (Responsive Optimized) */}
       <div className="announcement-bar">
-        <span>🐸 FROG STORE VIỆT NAM — Bách khoa & Cung cấp 26 loài ếch cảnh sống thuần chủng</span>
-        <span>📞 Tư vấn kỹ thuật & Đặt hàng nhanh: 0988.123.456</span>
+        <span className="announcement-main">🐸 FROG STORE VIỆT NAM — Bách khoa &amp; Cung cấp 26 loài ếch cảnh sống thuần chủng</span>
+        <span className="announcement-contact">📞 Tư vấn kỹ thuật &amp; Đặt hàng: 0988.123.456</span>
       </div>
 
       {/* 2. Top Navigation */}
@@ -638,15 +638,15 @@ export default function App() {
         </div>
 
         <div className="nav-actions">
-          <button className="track-btn" onClick={() => setTrackOpen(true)}>
+          <button className="track-btn" onClick={() => setTrackOpen(true)} title="Tra cứu đơn hàng">
             <PackageSearch size={18} />
-            <span>Tra cứu đơn</span>
+            <span className="btn-label-desktop">Tra cứu đơn</span>
           </button>
 
           {!currentUser ? (
-            <button className="track-btn" onClick={() => { setAuthError(''); setAuthOpen(true) }}>
+            <button className="track-btn" onClick={() => { setAuthError(''); setAuthOpen(true) }} title="Đăng nhập">
               <User size={18} />
-              <span>Đăng nhập</span>
+              <span className="btn-label-desktop">Đăng nhập</span>
             </button>
           ) : (
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -688,9 +688,9 @@ export default function App() {
             </div>
           )}
 
-          <button className="cart-btn" onClick={() => setCartOpen(true)} aria-label="Mở giỏ hàng">
-            <ShoppingBag size={20} />
-            <span>Giỏ hàng</span>
+          <button className="cart-btn" onClick={() => setCartOpen(true)} aria-label="Mở giỏ hàng" title="Giỏ hàng">
+            <ShoppingBag size={19} />
+            <span className="btn-label-desktop">Giỏ hàng</span>
             {cart.count > 0 && <span className="badge">{cart.count}</span>}
           </button>
         </div>
@@ -907,9 +907,15 @@ export default function App() {
                     <span className={getDiffBadgeClass(p.difficulty)}>
                       {p.difficulty}
                     </span>
-                    {p.is_featured === 1 && (
+                    {['pacman-green', 'tree-red-eyed', 'dart-azureus', 'vietnam-mossy', 'tree-whites-dumpy'].includes(p.slug) ? (
                       <span className="badge-featured">⭐ Nổi bật</span>
-                    )}
+                    ) : p.difficulty === 'Dễ' ? (
+                      <span className="badge-curated">🌱 Dễ nuôi</span>
+                    ) : p.habitat_type === 'paludarium' ? (
+                      <span className="badge-curated">💧 Bán cạn</span>
+                    ) : p.difficulty === 'Nâng cao' ? (
+                      <span className="badge-curated">💎 Sưu tầm</span>
+                    ) : null}
                   </div>
 
                   <div className="card-body">
@@ -921,18 +927,31 @@ export default function App() {
                       </span>
                     </div>
 
-                    <h3
-                      className="card-title"
-                      onClick={() => {
-                        window.location.hash = `#/frogs/${p.slug || p.id}`
-                        setActiveDetailSlug(p.slug || String(p.id))
-                      }}
-                      style={{ cursor: 'pointer' }}
-                      title={`Xem chi tiết hồ sơ ${p.name}`}
-                    >
-                      {p.name}
-                    </h3>
-                    <p className="card-sci-name">{p.scientific_name}</p>
+                    {(() => {
+                      const m = p.name.match(/^(.*?)\s*\((.*?)\)$/)
+                      const title = m ? m[1].trim() : p.name
+                      const sub = m ? m[2].trim() : ''
+                      return (
+                        <>
+                          <h3
+                            className="card-title"
+                            onClick={() => {
+                              window.location.hash = `#/frogs/${p.slug || p.id}`
+                              setActiveDetailSlug(p.slug || String(p.id))
+                            }}
+                            style={{ cursor: 'pointer' }}
+                            title={`Xem chi tiết hồ sơ ${p.name}`}
+                          >
+                            {title}
+                          </h3>
+                          {sub ? (
+                            <span className="card-morph-pill" title={`Biến thể: ${sub}`}>✨ {sub}</span>
+                          ) : (
+                            <p className="card-sci-name">{p.scientific_name}</p>
+                          )}
+                        </>
+                      )
+                    })()}
                     <p className="card-desc">{p.description}</p>
 
                     <div className="card-bio-pills">
