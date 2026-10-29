@@ -22,12 +22,15 @@ interface Message {
 interface FrogAiChatbotProps {
   currentProductSlug?: string | null
   onOpenProduct?: (slug: string) => void
+  hidden?: boolean
 }
 
 export const FrogAiChatbot: React.FC<FrogAiChatbotProps> = ({
   currentProductSlug,
-  onOpenProduct
+  onOpenProduct,
+  hidden
 }) => {
+  if (hidden) return null
   const [isOpen, setIsOpen] = useState(false)
   const [messages, setMessages] = useState<Message[]>([
     {
@@ -105,10 +108,10 @@ export const FrogAiChatbot: React.FC<FrogAiChatbotProps> = ({
         matchSlug = 'tree-whites-dumpy'
         matchName = 'Ếch Cây Lùn Úc (Dumpy)'
       } else if (qLower.includes('phi tiêu') || qLower.includes('độc') || qLower.includes('nguy hiểm')) {
-        reply = '💎 Về Ếch Phi Tiêu Độc (Dendrobatidae):\n' +
-          '• Trong tự nhiên chúng tích độc do ăn kiến rừng chứa alkaloid.\n' +
-          '• TUY NHIÊN, 100% ếch tại Frog Store là dòng sinh sản nhân tạo (Captive Bred - CB) nhiều đời, thức ăn là ruồi giấm nuôi nên HOÀN TOÀN KHÔNG CÓ ĐỘC TỐ, vô hại tuyệt đối đối với con người và thú cưng!\n' +
-          '• Ếch hoạt bát ban ngày, màu sắc rực rỡ và tiếng kêu líu lo như chim hót rất vui tai.'
+        reply = '💎 Về Độc Tính Sinh Học & Pháp Lý Ếch Phi Tiêu (Dendrobatidae / Phyllobates):\n' +
+          '• Cơ chế độc tính: Theo nghiên cứu sinh học lưỡng cư (L.A. Zoo), ếch phi tiêu ngoài tự nhiên tích tụ độc tố alkaloid qua khẩu phần kiến rừng và bọ cánh cứng bản địa. Khi nuôi sinh sản nhân tạo (Captive-Bred - CB), do thức ăn chỉ là ruồi giấm nuôi và dế mèn không chứa alkaloid, cá thể không tự tổng hợp được độc tố.\n' +
+          '• Nguồn gốc & CITES: Các loài thuộc chi Dendrobates, Phyllobates được kiểm soát theo CITES Phụ lục II. 100% cá thể tại Frog Store có nguồn gốc trại nuôi nhân tạo CB hợp pháp, có giấy tờ kiểm dịch và tuân thủ quy định pháp luật.\n' +
+          '• An toàn tiếp xúc: Dù lượng độc tố được triệt tiêu ở môi trường nuôi nhốt, bạn vẫn cần đeo găng hoặc rửa tay sạch trước và sau khi chăm sóc, tránh chạm vào niêm mạc mắt/miệng để bảo vệ cả bản thân lẫn màng da thẩm thấu của ếch.'
         matchSlug = 'dart-azureus'
         matchName = 'Ếch Phi Tiêu Xanh Azureus'
       } else if (qLower.includes('cây') || qLower.includes('leo') || qLower.includes('mắt đỏ')) {
@@ -169,7 +172,7 @@ export const FrogAiChatbot: React.FC<FrogAiChatbotProps> = ({
       {/* Floating Action Button (FAB) */}
       {!isOpen && (
         <button
-          className="frog-ai-fab"
+          className="frog-ai-fab" aria-label="Mở Trợ Lý Ếch AI tư vấn sinh học"
           onClick={() => setIsOpen(true)}
           title="Mở Trợ Lý Ếch AI tư vấn sinh học"
         >
@@ -286,7 +289,7 @@ export const FrogAiChatbot: React.FC<FrogAiChatbotProps> = ({
               placeholder="Hỏi về thức ăn, nhiệt độ, cách nuôi..."
               value={inputText}
               onChange={(e) => setInputText(e.target.value)}
-              className="chat-text-input"
+              className="chat-text-input" aria-label="Nhập câu hỏi tư vấn về ếch cảnh"
             />
             <button
               type="submit"

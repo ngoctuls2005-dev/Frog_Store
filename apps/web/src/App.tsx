@@ -16,6 +16,7 @@ import { AdminPortal } from './AdminPortal'
 import { ProfileModal } from './ProfileModal'
 import { FrogDetailPage } from './FrogDetailPage'
 import { FrogAiChatbot } from './FrogAiChatbot'
+import { PolicyModal, type PolicyType } from './PolicyModal'
 import {
   ShoppingBag,
   Search,
@@ -101,6 +102,8 @@ export default function App() {
   const [quizRecommendation, setQuizRecommendation] = useState<Product | null>(null)
 
   // Modals & Drawers
+  const [policyOpen, setPolicyOpen] = useState(false)
+  const [activePolicy, setActivePolicy] = useState<PolicyType>('privacy')
   const [cartOpen, setCartOpen] = useState(false)
   const [checkoutOpen, setCheckoutOpen] = useState(false)
   const [trackOpen, setTrackOpen] = useState(false)
@@ -401,16 +404,6 @@ export default function App() {
     showToast('Đã đăng xuất. Dữ liệu tài khoản của bạn được bảo toàn an toàn!')
   }
 
-  const fillDemoCreds = (role: 'admin' | 'user') => {
-    setAuthTab('login')
-    if (role === 'admin') {
-      setAuthEmail('admin@frogstore.vn')
-      setAuthPassword('Admin@123456')
-    } else {
-      setAuthEmail('khachhang@gmail.com')
-      setAuthPassword('User@123456')
-    }
-  }
 
   // GPS Geolocation Handler in Checkout
   const handleScanGpsLocation = () => {
@@ -577,6 +570,7 @@ export default function App() {
           <Search className="search-icon" size={18} />
           <input
             type="text"
+            aria-label="Tìm kiếm loài ếch theo tên hoặc phân loại"
             placeholder="Tìm theo tên loài, tên khoa học (Pacman, Dumpy, Dart, Mossy...)"
             value={search}
             onChange={(e) => handleSearchChange(e.target.value)}
@@ -1219,6 +1213,7 @@ export default function App() {
             <form onSubmit={handleTrackSubmit} style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
               <input
                 type="text"
+                aria-label="Nhập mã đơn hàng cần tra cứu"
                 placeholder="Ví dụ: FROG-849201"
                 value={trackCode}
                 onChange={(e) => setTrackCode(e.target.value)}
@@ -1279,19 +1274,6 @@ export default function App() {
               ✕
             </button>
 
-            {/* Quick Demo Creds */}
-            <div className="demo-account-box">
-              <p>⚡ <strong>Tài khoản Demo có sẵn:</strong></p>
-              <div style={{ display: 'flex', gap: 6, marginTop: 4 }}>
-                <button type="button" className="demo-btn" onClick={() => fillDemoCreds('admin')}>
-                  🔑 Admin (admin@frogstore.vn)
-                </button>
-                <button type="button" className="demo-btn" onClick={() => fillDemoCreds('user')}>
-                  👤 Khách (khachhang@gmail.com)
-                </button>
-              </div>
-            </div>
-
             {/* Google One-Click Button */}
             <button
               type="button"
@@ -1343,7 +1325,7 @@ export default function App() {
                   <input
                     type="email"
                     required
-                    placeholder="admin@frogstore.vn hoặc khachhang@gmail.com"
+                    placeholder="email@example.com"
                     value={authEmail}
                     onChange={(e) => setAuthEmail(e.target.value)}
                   />
@@ -1545,10 +1527,10 @@ export default function App() {
                 <div className="quiz-progress-bar">
                   <div
                     className="quiz-progress-fill"
-                    style={{ width: `${(quizStep / 4) * 100}%` }}
+                    style={{ width: quizStep <= 3 ? `${(quizStep / 3) * 100}%` : "100%" }}
                   ></div>
                 </div>
-                <span className="quiz-step-label">Bước {quizStep} / 3</span>
+                <span className="quiz-step-label">{quizStep <= 3 ? `Bước ${quizStep} / 3` : "🎯 Kết quả đề xuất"}</span>
               </div>
 
               {quizStep === 1 && (
@@ -1718,6 +1700,39 @@ export default function App() {
           </div>
 
           <div className="footer-col">
+            <h3>CHÍNH SÁCH &amp; PHÁP LÝ</h3>
+            <ul style={{ listStyle: 'none', padding: 0 }}>
+              <li style={{ marginBottom: 8 }}>
+                <button
+                  type="button"
+                  className="footer-policy-link"
+                  onClick={() => { setActivePolicy('privacy'); setPolicyOpen(true); }}
+                >
+                  🔒 Chính Sách Quyền Riêng Tư
+                </button>
+              </li>
+              <li style={{ marginBottom: 8 }}>
+                <button
+                  type="button"
+                  className="footer-policy-link"
+                  onClick={() => { setActivePolicy('warranty'); setPolicyOpen(true); }}
+                >
+                  📦 Chính Sách Bảo Hành Sống 100%
+                </button>
+              </li>
+              <li style={{ marginBottom: 8 }}>
+                <button
+                  type="button"
+                  className="footer-policy-link"
+                  onClick={() => { setActivePolicy('terms'); setPolicyOpen(true); }}
+                >
+                  ⚖️ Điều Khoản Dịch Vụ &amp; CITES
+                </button>
+              </li>
+            </ul>
+          </div>
+
+          <div className="footer-col">
             <h3>CHÍNH SÁCH BẢO HÀNH</h3>
             <ul>
               <li>🛡️ Bao sống 100% khi nhận hàng trên toàn quốc</li>
@@ -1733,8 +1748,17 @@ export default function App() {
         </div>
       </footer>
 
+      {/* 14b. POLICY & COMPLIANCE MODAL */}
+      <PolicyModal
+        isOpen={policyOpen}
+        activePolicy={activePolicy}
+        onClose={() => setPolicyOpen(false)}
+        onSelectPolicy={setActivePolicy}
+      />
+
       {/* 15. FROG AI CHATBOT WIDGET */}
       <FrogAiChatbot
+        hidden={cartOpen || checkoutOpen}
         currentProductSlug={activeDetailSlug}
         onOpenProduct={(slug) => {
           window.location.hash = `#/frogs/${slug}`

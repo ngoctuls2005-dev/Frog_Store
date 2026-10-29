@@ -13,10 +13,30 @@
 
 ## 🌐 Trải Nghiệm Trực Tiếp
 - **Production URL**: [https://store.ngoctuls2005.workers.dev](https://store.ngoctuls2005.workers.dev)
-- **Tài khoản Trải Nghiệm Demo**:
-  - 👑 **Admin Portal**: `admin@frogstore.vn` / Mật khẩu: `Admin@123456`
-  - 👤 **Khách hàng Test**: `khachhang@gmail.com` / Mật khẩu: `User@123456`
-  *(Có sẵn nút điền nhanh tài khoản mẫu ngay trong form đăng nhập)*
+- **GitHub Repository**: [https://github.com/ngoctuls2005-dev/Frog_Store.git](https://github.com/ngoctuls2005-dev/Frog_Store.git)
+- **Xác Thực Quản Trị**:
+  - Quyền Admin được phân cấp chặt chẽ qua cơ chế RBAC và lưu trữ an toàn trong cơ sở dữ liệu.
+  - Toàn bộ tài khoản và mật khẩu quản trị được gỡ bỏ khỏi mã nguồn public và client JS bundle để đảm bảo an toàn sản phẩm.
+
+---
+
+## 🛡️ Tiêu Chuẩn Bảo Mật & Pháp Lý (Security & Compliance)
+- **Chuyển Hướng HTTPS Bắt Buộc & HSTS**: Tự động 301 Permanent Redirect mọi truy cập HTTP sang HTTPS, kích hoạt HSTS 1 năm (`max-age=31536000; includeSubDomains; preload`).
+- **Bộ Security Headers Đầy Đủ**: 
+  - `Content-Security-Policy`: Giới hạn nghiêm ngặt nguồn tải script, style, image và kết nối.
+  - `X-Content-Type-Options: nosniff` (Chống MIME-type sniffing).
+  - `X-Frame-Options: DENY` (Chống Clickjacking).
+  - `Referrer-Policy: strict-origin-when-cross-origin`.
+- **Bảo Vệ Dữ Liệu Cá Nhân (PII Concealment) & Rate Limiting**:
+  - Tra cứu đơn hàng công khai tự động che giấu số điện thoại (`0988***456`), họ tên (`Nguyễn V** T*`), ẩn địa chỉ cụ thể và ẩn hoàn toàn tọa độ GPS đối với người tra cứu vãng lai. Chỉ chủ sở hữu đơn hàng (đã đăng nhập) hoặc Admin mới được xem đầy đủ thông tin.
+  - Áp dụng Rate Limiting trên Cloudflare KV giới hạn tần suất đăng nhập và tra cứu đơn để chống vét cạn (Brute-force).
+- **Tuân Thủ Pháp Lý CITES & Cơ Sở Khoa Học Sinh Học (L.A. Zoo)**:
+  - 100% các dòng ếch phi tiêu (Dendrobatidae) là dòng sinh sản nhân tạo thế hệ F (Captive-Bred - CB), do thức ăn nuôi nhốt thiếu hụt họ kiến rừng và bọ cánh cứng chứa tiền chất alkaloid nên không tổng hợp được độc tố.
+  - Đầy đủ chính sách: Quyền riêng tư (Privacy Policy), Điều khoản Dịch vụ & CITES Phụ lục II, Chính sách Vận chuyển & Cam kết Bảo hành Sống 100% khi nhận hàng (quay video unboxing trong 30 phút).
+- **Tối Ưu Trải Nghiệm & Trợ Năng (A11y)**:
+  - Tự động ẩn nút Chatbot nổi khi mở Giỏ hàng hoặc Thanh toán để tránh che khuất nội dung.
+  - Bổ sung `aria-label` cho tất cả các thanh tìm kiếm, tra cứu và khung chat.
+  - Sửa tiến độ trắc nghiệm hiển thị trực quan "🎯 Kết quả đề xuất".
 
 ---
 
@@ -179,3 +199,4 @@ Frog_Store/
 ## 📜 Giấy Phép & Bản Quyền
 Dự án được xây dựng với mục đích học tập, nghiên cứu lưỡng cư học và phục vụ thương mại điện tử thú cưng sinh sản nhân tạo (Captive Bred - CB).  
 Tất cả quyền được bảo lưu © 2026 **Frog Store Việt Nam**.
+

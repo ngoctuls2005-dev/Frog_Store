@@ -479,8 +479,8 @@ export const FrogDetailPage: React.FC<FrogDetailPageProps> = ({
                   <p>{d?.handling_safety || 'Lưỡng cư có làn da thẩm thấu màng mỏng, chỉ quan sát là chính'}</p>
                 </div>
                 <div className="health-card">
-                  <h5>🧪 Cảnh Báo Độc Tính Da</h5>
-                  <p>{d?.toxicity_warning || 'Hoàn toàn không có độc tố ở cá thể sinh sản nhân tạo'}</p>
+                  <h5>🧪 Độc Tính Da &amp; Pháp Lý CITES (Dòng CB)</h5>
+                  <p>{d?.toxicity_warning || 'Dòng sinh sản nhân tạo (CB) nuôi bằng mồi sạch không chứa alkaloid nên không tích tụ độc tố tự nhiên; tuân thủ CITES Phụ lục II. Cần rửa tay sạch trước và sau khi tiếp xúc để bảo vệ màng da thẩm thấu của lưỡng cư.'}</p>
                 </div>
                 <div className="health-card full-span">
                   <h5>🩺 Các Bệnh Lý Phổ Biến &amp; Cách Phòng Tránh</h5>

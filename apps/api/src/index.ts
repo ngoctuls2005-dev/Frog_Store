@@ -12,7 +12,7 @@ import {
   type JwtPayload,
 } from './auth'
 
-type Env = { Bindings: { DB: D1Database; CART: KVNamespace } }
+type Env = { Bindings: { DB: D1Database; CART: KVNamespace; ASSETS?: Fetcher } }
 
 export type Category = {
   id: number
@@ -104,7 +104,7 @@ type CartResponse = {
   count: number
 }
 
-const app = new Hono<Env>().basePath('/api')
+const app = new Hono<Env>()
 
 const CART_TTL = 60 * 60 * 24 * 30 // 30 ngày
 
@@ -119,6 +119,21 @@ const readGuestLines = async (c: Context<Env>, key: string): Promise<Line[]> =>
 
 const writeGuestLines = (c: Context<Env>, key: string, lines: Line[]) =>
   c.env.CART.put(key, JSON.stringify(lines), { expirationTtl: CART_TTL })
+
+// Rate Limiting Helper (Cloudflare KV)
+const checkRateLimit = async (c: Context<Env>, action: string, limit: number, windowSec: number): Promise<boolean> => {
+  const ip = c.req.header('cf-connecting-ip') || c.req.header('x-real-ip') || '127.0.0.1'
+  const key = `ratelimit:${action}:${ip}`
+  try {
+    const current = Number((await c.env.CART.get(key)) || '0')
+    if (current >= limit) return false
+    await c.env.CART.put(key, String(current + 1), { expirationTtl: windowSec })
+  } catch {
+    // If KV fails, allow request
+  }
+  return true
+}
+
 
 // Đọc giỏ hàng của user từ D1 (bảo đảm không mất khi đăng xuất)
 const readUserLines = async (c: Context<Env>, userId: number): Promise<Line[]> => {
@@ -490,6 +505,11 @@ app.post('/auth/register', async (c) => {
 })
 
 app.post('/auth/login', async (c) => {
+  const allowed = await checkRateLimit(c, 'login', 5, 600)
+  if (!allowed) {
+    return c.json({ error: 'Quá nhiều lần thử đăng nhập. Vui lòng thử lại sau 10 phút để đảm bảo an toàn!' }, 429)
+  }
+
   const { email, password } = await c.req.json<{ email?: string; password?: string }>()
   if (!email || !password) {
     return c.json({ error: 'Vui lòng nhập email và mật khẩu' }, 400)
@@ -1090,10 +1110,15 @@ app.post('/orders', async (c) => {
 })
 
 app.get('/orders/:code', async (c) => {
+  const allowed = await checkRateLimit(c, 'track', 10, 300)
+  if (!allowed) {
+    return c.json({ error: 'Bạn đã tra cứu đơn quá nhiều lần. Vui lòng thử lại sau 5 phút!' }, 429)
+  }
+
   const code = c.req.param('code')
   const order = await c.env.DB.prepare('SELECT * FROM orders WHERE order_code = ?')
     .bind(code)
-    .first()
+    .first<any>()
 
   if (!order) return c.json({ error: 'Không tìm thấy đơn hàng này' }, 404)
 
@@ -1106,7 +1131,48 @@ app.get('/orders/:code', async (c) => {
     .bind(order.id)
     .all()
 
-  return c.json({ ...order, items })
+  // Kiểm tra quyền sở hữu: Chủ đơn hàng hoặc Admin được xem đầy đủ
+  const authUser = await getAuthUser(c)
+  const isOwnerOrAdmin = authUser && (authUser.sub === order.user_id || authUser.role === 'admin')
+
+  if (isOwnerOrAdmin) {
+    return c.json({ ...order, items })
+  }
+
+  // Khách vãng lai tra cứu: Che giấu thông tin định danh (PII) và ẩn hoàn toàn tọa độ GPS
+  const maskedPhone = order.customer_phone
+    ? (order.customer_phone.length >= 7
+        ? order.customer_phone.slice(0, 4) + '***' + order.customer_phone.slice(-3)
+        : '***')
+    : '***'
+
+  const maskName = (name: string) => {
+    if (!name) return 'Khách hàng'
+    const parts = name.trim().split(' ')
+    if (parts.length === 1) return parts[0][0] + '***'
+    return parts[0] + ' ' + parts.slice(1).map((p: string) => p[0] + '*').join(' ')
+  }
+
+  const maskAddress = (address: string, city: string) => {
+    if (!address) return city || 'Việt Nam'
+    const parts = address.split(',').map((s: string) => s.trim())
+    if (parts.length > 2) {
+      return '***, ' + parts.slice(-2).join(', ')
+    }
+    return '***, ' + (city || 'Việt Nam')
+  }
+
+  const safeOrder = {
+    ...order,
+    customer_name: maskName(order.customer_name),
+    customer_phone: maskedPhone,
+    customer_address: maskAddress(order.customer_address, order.city),
+    latitude: null, // Ẩn GPS hoàn toàn
+    longitude: null, // Ẩn GPS hoàn toàn
+    items,
+  }
+
+  return c.json(safeOrder)
 })
 
 // ==========================================
@@ -1381,4 +1447,61 @@ app.put('/admin/users/:id/status', async (c) => {
   return c.json({ success: true, message: 'Đã cập nhật trạng thái tài khoản' })
 })
 
-export default app
+// ==========================================
+// ROOT APP: HTTPS REDIRECT & SECURITY HEADERS
+// ==========================================
+const root = new Hono<Env>()
+
+// 1. Chuyển hướng bắt buộc HTTP -> HTTPS (301 Permanent Redirect)
+root.use('*', async (c, next) => {
+  const proto = c.req.header('x-forwarded-proto') || new URL(c.req.url).protocol.replace(':', '')
+  if (proto === 'http') {
+    const url = new URL(c.req.url)
+    url.protocol = 'https:'
+    return c.redirect(url.toString(), 301)
+  }
+  await next()
+})
+
+// 2. Toàn bộ Security Headers tiêu chuẩn cho mọi phản hồi
+root.use('*', async (c, next) => {
+  await next()
+  const headers = new Headers(c.res.headers)
+  headers.set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload')
+  headers.set('X-Content-Type-Options', 'nosniff')
+  headers.set('X-Frame-Options', 'DENY')
+  headers.set('Referrer-Policy', 'strict-origin-when-cross-origin')
+  headers.set('Permissions-Policy', 'geolocation=(self)')
+  headers.set(
+    'Content-Security-Policy',
+    "default-src 'self'; script-src 'self' 'unsafe-inline' https:; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: https:; connect-src 'self' https: https://nominatim.openstreetmap.org; font-src 'self' https: data:;"
+  )
+  c.res = new Response(c.res.body, {
+    status: c.res.status,
+    statusText: c.res.statusText,
+    headers,
+  })
+})
+
+// 3. Mount API router tại /api
+root.route('/api', app)
+
+// 4. Fallback phục vụ Static Assets & SPA frontend
+root.all('*', async (c) => {
+  if (c.env.ASSETS) {
+    try {
+      const res = await c.env.ASSETS.fetch(c.req.raw)
+      if (res.status === 404 && !c.req.path.startsWith('/api')) {
+        // SPA Fallback: serve /index.html if route not found
+        const indexReq = new Request(new URL('/', c.req.url).toString(), c.req.raw)
+        return await c.env.ASSETS.fetch(indexReq)
+      }
+      return res
+    } catch (e: any) {
+      return c.text(`Asset fetch error: ${e?.message || e}`, 500)
+    }
+  }
+  return c.text('Not Found', 404)
+})
+
+export default root

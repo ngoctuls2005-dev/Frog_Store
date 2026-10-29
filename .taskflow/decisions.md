@@ -227,3 +227,45 @@
 ### [UI-06] VERIFIED (2026-10-29T07:14:07Z)
 - **Test tự động:** 1 lệnh PASS
 
+### [SEC-01] Ghi chú quyết định (2026-10-29T07:37:28Z)
+- **Vì sao (Why):** Ngan chan truy cap HTTP khong ma hoa va phong thu XSS/clickjacking bang security headers
+- **Thay đổi & Tác động (Change):** Cau hinh rootApp middleware 301 redirect HTTP sang HTTPS, them day du HSTS, CSP, nosniff, DENY va run_worker_first trong wrangler.toml
+
+### [SEC-01] VERIFIED (2026-10-29T07:37:35Z)
+- **Test tự động:** 1 lệnh PASS
+
+### [SEC-02] Ghi chú quyết định (2026-10-29T07:40:07Z)
+- **Vì sao (Why):** Loai bo nguy co lo thong tin quan tri vien tren ma nguon JS cong khai
+- **Thay đổi & Tác động (Change):** Xoa ham fillDemoCreds va UI demo credentials khoi App.tsx, doi placeholder va kiem tra bundle dist sach 100%
+
+### [SEC-02] VERIFIED (2026-10-29T07:40:11Z)
+- **Test tự động:** 1 lệnh PASS
+
+### [SEC-03] Ghi chú quyết định (2026-10-29T07:42:03Z)
+- **Vì sao (Why):** Bao ve quyen rieng tu va toa do GPS cua khach hang khi tra cuu don cong khai va chong brute force
+- **Thay đổi & Tác động (Change):** Them helper checkRateLimit tren KV cho login va tra cuu don; masking so dien thoai, dia chi, ten va an GPS doi voi nguoi dung vang lai
+
+### [SEC-03] VERIFIED (2026-10-29T07:42:24Z)
+- **Test tự động:** 1 lệnh PASS
+
+### [COMP-01] Ghi chú quyết định (2026-10-29T07:44:47Z)
+- **Vì sao (Why):** Minh bach hoa quyen rieng tu du lieu nguoi dung va dieu kien bao hanh giao nhan ech song
+- **Thay đổi & Tác động (Change):** Tao component PolicyModal.tsx gom 3 tab Quyen rieng tu, Bao hanh song 100% va Dieu khoan CITES; gan vao Footer links trong App.tsx va them styles
+
+### [COMP-01] VERIFIED (2026-10-29T07:44:58Z)
+- **Test tự động:** 1 lệnh PASS
+
+### [COMP-02] Ghi chú quyết định (2026-10-29T07:46:28Z)
+- **Vì sao (Why):** Chuan hoa kien thuc sinh hoc doc to ech phi tieu theo L.A. Zoo va tuyen bo tuan thu CITES Phu luc II
+- **Thay đổi & Tác động (Change):** Xoa cac khang dinh tuyet doi ve doc to trong Chatbot va DetailPage, giai thich co che alkaloid thieu hut o dong CB va huong dan tiep xuc an toan
+
+### [COMP-02] VERIFIED (2026-10-29T07:46:40Z)
+- **Test tự động:** 1 lệnh PASS
+
+### [UI-07] Ghi chú quyết định (2026-10-29T07:49:38Z)
+- **Vì sao (Why):** Sua loi dem buoc trac nghiem 4/3, tu an Chatbot FAB khi gio hang mo va bo sung aria-label
+- **Thay đổi & Tác động (Change):** Cap nhat tien trinh trac nghiem hien 'Ket qua de xuat', them prop hidden cho FrogAiChatbot khi cartOpen/checkoutOpen, them aria-label cho search, track va chat input
+
+### [UI-07] VERIFIED (2026-10-29T07:49:55Z)
+- **Test tự động:** 1 lệnh PASS
+
