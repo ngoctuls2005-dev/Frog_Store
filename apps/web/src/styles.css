@@ -4391,8 +4391,8 @@ html, body {
   position: fixed;
   bottom: 24px;
   right: 24px;
-  width: min(410px, calc(100vw - 28px));
-  height: min(560px, calc(100vh - 90px));
+  width: min(390px, calc(100vw - 28px));
+  height: min(530px, calc(100vh - 90px));
   background: #ffffff;
   border-radius: 20px;
   box-shadow: 0 20px 50px -10px rgba(0, 0, 0, 0.28), 0 0 0 1px rgba(0, 0, 0, 0.08);
@@ -4405,8 +4405,8 @@ html, body {
 }
 
 .chat-panel-expanded {
-  width: min(530px, calc(100vw - 28px)) !important;
-  height: min(690px, calc(100vh - 70px)) !important;
+  width: min(480px, calc(100vw - 32px)) !important;
+  height: min(620px, calc(100vh - 80px)) !important;
 }
 
 .chat-panel-minimized {
@@ -4900,4 +4900,10 @@ html, body {
     height: calc(100vh - 16px) !important;
     bottom: 8px !important;
   }
+}
+
+.chat-italic-highlight {
+  font-style: italic;
+  color: #047857;
+  font-weight: 500;
 }
