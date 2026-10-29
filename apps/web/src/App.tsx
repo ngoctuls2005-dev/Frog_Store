@@ -128,17 +128,24 @@ export default function App() {
 
   // Fetch initial data & restore user
   useEffect(() => {
-    Promise.all([api.categories(), api.products(), api.cart()])
-      .then(([cats, prods, c]) => {
-        setCategories(cats)
+    // PERF-02: Tải song song độc lập, render danh sách sản phẩm ngay lập tức
+    api.categories()
+      .then(setCategories)
+      .catch((e) => console.warn('Fetch categories error:', e))
+
+    api.products()
+      .then((prods) => {
         setProducts(prods)
-        setCart(c)
         setLoading(false)
       })
       .catch((e) => {
         setError(e.message)
         setLoading(false)
       })
+
+    api.cart()
+      .then(setCart)
+      .catch((e) => console.warn('Fetch cart error:', e))
 
     const token = getStoredToken()
     if (token) {

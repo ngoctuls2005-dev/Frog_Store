@@ -41,3 +41,4 @@ assert '.species-scientific' in css_code, "Missing species-scientific selectable
 print("✓ 4. Content-Visibility rendering & Text Protection (no unwanted copy/highlight) verified")
 
 print("\n[ALL 4 CHECKS PASSED 100%] V4 Perf, Stability & Text Protection verified successfully!")
+

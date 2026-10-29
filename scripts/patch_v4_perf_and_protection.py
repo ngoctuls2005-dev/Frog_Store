@@ -221,3 +221,4 @@ if '/* UI/UX V4: PERFORMANCE' not in css_code:
     print("✓ Appended Content-Visibility & Text Protection to styles.css")
 
 print("All V4 patches applied successfully!")
+

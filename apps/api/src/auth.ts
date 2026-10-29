@@ -33,7 +33,21 @@ export type GoogleUserPayload = {
   avatar: string
 }
 
-export const DEFAULT_JWT_SECRET = 'frog-store-super-secret-jwt-key-2026'
+// Runtime dynamic secret: Never expose or hardcode fallback secrets in public source code
+let cachedRuntimeSecret: string | null = null
+
+export function getJwtSecret(env?: any): string {
+  if (env?.JWT_SECRET && typeof env.JWT_SECRET === 'string' && env.JWT_SECRET.trim().length >= 16) {
+    return env.JWT_SECRET.trim()
+  }
+  // Generate a cryptographically secure 256-bit runtime secret if env variable not explicitly set
+  if (!cachedRuntimeSecret) {
+    const bytes = new Uint8Array(32)
+    crypto.getRandomValues(bytes)
+    cachedRuntimeSecret = bytesToHex(bytes)
+  }
+  return cachedRuntimeSecret
+}
 
 // --- Hex / Base64url Helpers ---
 function hexToBytes(hex: string): Uint8Array {
@@ -44,7 +58,7 @@ function hexToBytes(hex: string): Uint8Array {
   return bytes
 }
 
-function bytesToHex(bytes: Uint8Array): string {
+export function bytesToHex(bytes: Uint8Array): string {
   return Array.from(bytes)
     .map((b) => b.toString(16).padStart(2, '0'))
     .join('')
@@ -86,38 +100,62 @@ function bytesToBase64Url(bytes: Uint8Array): string {
     .replace(/=+$/, '')
 }
 
-// --- Google Token / Credential Parser ---
-export function parseGoogleToken(tokenOrCredential: string): GoogleUserPayload | null {
+// --- Server-side Google ID Token Verification ---
+// Authenticates ID Token directly with Google's TokenInfo endpoint
+export async function verifyGoogleToken(credential: string, expectedClientId?: string): Promise<GoogleUserPayload | null> {
   try {
-    if (!tokenOrCredential) return null
-    const trimmed = tokenOrCredential.trim()
-    // JSON payload case (direct payload or simulated dev/mock token)
-    if (trimmed.startsWith('{')) {
-      const data = JSON.parse(trimmed)
-      if (data.googleId && data.email) {
-        return {
-          googleId: String(data.googleId),
-          email: String(data.email).toLowerCase().trim(),
-          name: data.name || data.email.split('@')[0],
-          avatar: data.avatar || data.picture || '',
-        }
-      }
+    if (!credential || typeof credential !== 'string') return null
+    const trimmed = credential.trim()
+    // Do NOT accept arbitrary JSON strings. Only valid Google JWT tokens.
+    if (!trimmed || trimmed.startsWith('{') || trimmed.split('.').length !== 3) {
+      return null
     }
-    // Google Identity Services JWT IdToken case
-    const parts = trimmed.split('.')
-    if (parts.length === 3) {
-      const payload = JSON.parse(base64UrlDecode(parts[1]))
-      if (payload.sub && payload.email) {
-        return {
-          googleId: String(payload.sub),
-          email: String(payload.email).toLowerCase().trim(),
-          name: payload.name || payload.email.split('@')[0],
-          avatar: payload.picture || '',
-        }
-      }
+
+    const tokenInfoUrl = `https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(trimmed)}`
+    const res = await fetch(tokenInfoUrl, {
+      method: 'GET',
+      headers: { 'Accept': 'application/json' },
+    })
+
+    if (!res.ok) {
+      return null
     }
-    return null
-  } catch {
+
+    const payload = await res.json<any>()
+    if (!payload || !payload.sub || !payload.email) {
+      return null
+    }
+
+    // Verify Google Issuer
+    const validIssuers = ['accounts.google.com', 'https://accounts.google.com']
+    if (!validIssuers.includes(payload.iss)) {
+      return null
+    }
+
+    // Verify Email Verified
+    if (payload.email_verified !== 'true' && payload.email_verified !== true) {
+      return null
+    }
+
+    // Verify Expiration
+    const now = Math.floor(Date.now() / 1000)
+    if (payload.exp && Number(payload.exp) < now) {
+      return null
+    }
+
+    // Verify Audience if configured
+    if (expectedClientId && payload.aud && payload.aud !== expectedClientId) {
+      return null
+    }
+
+    return {
+      googleId: String(payload.sub),
+      email: String(payload.email).toLowerCase().trim(),
+      name: payload.name || payload.email.split('@')[0],
+      avatar: payload.picture || '',
+    }
+  } catch (err) {
+    console.error('Google ID Token verification failed:', err)
     return null
   }
 }
@@ -163,7 +201,7 @@ export async function verifyPassword(password: string, saltHex: string, expected
 }
 
 // --- JWT HS256 ---
-export async function signJwt(payload: Omit<JwtPayload, 'exp'> & { exp?: number }, secret: string = DEFAULT_JWT_SECRET): Promise<string> {
+export async function signJwt(payload: Omit<JwtPayload, 'exp'> & { exp?: number }, secret: string): Promise<string> {
   const enc = new TextEncoder()
   const header = { alg: 'HS256', typ: 'JWT' }
   const exp = payload.exp || Math.floor(Date.now() / 1000) + 7 * 24 * 60 * 60 // 7 days
@@ -186,7 +224,7 @@ export async function signJwt(payload: Omit<JwtPayload, 'exp'> & { exp?: number 
   return `${dataToSign}.${signatureEncoded}`
 }
 
-export async function verifyJwt(token: string, secret: string = DEFAULT_JWT_SECRET): Promise<JwtPayload | null> {
+export async function verifyJwt(token: string, secret: string): Promise<JwtPayload | null> {
   try {
     const parts = token.split('.')
     if (parts.length !== 3) return null
@@ -225,10 +263,11 @@ export async function verifyJwt(token: string, secret: string = DEFAULT_JWT_SECR
   }
 }
 
-// --- Middlewares ---
-export const getAuthUser = async (c: Context): Promise<JwtPayload | null> => {
+// --- Context-aware Auth Helper ---
+export const getAuthUser = async (c: Context<any>): Promise<JwtPayload | null> => {
   const authHeader = c.req.header('authorization')
   if (!authHeader || !authHeader.startsWith('Bearer ')) return null
   const token = authHeader.substring(7).trim()
-  return verifyJwt(token)
+  const secret = getJwtSecret(c.env)
+  return verifyJwt(token, secret)
 }

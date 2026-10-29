@@ -4,9 +4,10 @@ import {
   X,
   Send,
   Sparkles,
-  HelpCircle,
   ExternalLink,
-  ChevronDown
+  ChevronDown,
+  Minimize2,
+  Maximize2
 } from 'lucide-react'
 import { api } from './api'
 
@@ -32,6 +33,7 @@ export const FrogAiChatbot: React.FC<FrogAiChatbotProps> = ({
 }) => {
   if (hidden) return null
   const [isOpen, setIsOpen] = useState(false)
+  const [isMinimized, setIsMinimized] = useState(false)
   const [messages, setMessages] = useState<Message[]>([
     {
       id: 'welcome',
@@ -45,6 +47,23 @@ export const FrogAiChatbot: React.FC<FrogAiChatbotProps> = ({
   const [knowledgeBase, setKnowledgeBase] = useState<any[]>([])
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const chatPanelRef = useRef<HTMLDivElement>(null)
+  const hasLoadedKnowledgeRef = useRef(false)
+
+  // PERF-01: Lazy-load AI Knowledge Base only when chat is opened for the first time
+  useEffect(() => {
+    if (isOpen && !hasLoadedKnowledgeRef.current) {
+      hasLoadedKnowledgeRef.current = true
+      api.aiKnowledge()
+        .then((res) => {
+          if (res?.species) {
+            setKnowledgeBase(res.species)
+          }
+        })
+        .catch(() => {
+          hasLoadedKnowledgeRef.current = false
+        })
+    }
+  }, [isOpen])
 
   // Click outside to collapse chat and prevent blocking buttons/details
   useEffect(() => {
@@ -58,29 +77,18 @@ export const FrogAiChatbot: React.FC<FrogAiChatbotProps> = ({
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [isOpen])
 
-  // Fetch AI Knowledge Base once on mount
-  useEffect(() => {
-    api.aiKnowledge()
-      .then((res) => {
-        if (res?.species) {
-          setKnowledgeBase(res.species)
-        }
-      })
-      .catch(() => {})
-  }, [])
-
   // Auto scroll to bottom of chat
   useEffect(() => {
-    if (isOpen) {
+    if (isOpen && !isMinimized) {
       messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
     }
-  }, [messages, isOpen, isTyping])
+  }, [messages, isOpen, isTyping, isMinimized])
 
   const quickPrompts = [
     { label: '🐛 Pacman ăn gì & mấy ngày ăn?', query: 'Ếch Pacman ăn gì và mấy ngày cho ăn 1 lần?' },
-    { label: '🌱 Người mới nên nuôi loài nào?', query: 'Tôi là người mới bắt đầu, nên chọn loài ếch nào dễ nuôi nhất?' },
-    { label: '🧪 Ếch phi tiêu có độc không?', query: 'Ếch phi tiêu nuôi cảnh có độc nguy hiểm không?' },
-    { label: '🌿 Bể nuôi ếch cây cần gì?', query: 'Chuồng nuôi ếch cây cần chuẩn bị những phụ kiện và vi khí hậu gì?' }
+    { label: '🌿 Bể nuôi ếch cây cần gì?', query: 'Chuồng nuôi ếch cây cần chuẩn bị những phụ kiện và vi khí hậu gì?' },
+    { label: '🧪 Ếch phi tiêu có độc không?', query: 'Ếch phi tiêu độc nuôi cảnh có độc nguy hiểm không?' },
+    { label: '👶 Loài nào dễ nuôi cho người mới?', query: 'Tôi là người mới tập nuôi thì nên chọn loài ếch nào dễ nhất?' },
   ]
 
   const handleSend = (textToSend?: string) => {
@@ -98,71 +106,46 @@ export const FrogAiChatbot: React.FC<FrogAiChatbotProps> = ({
     if (!textToSend) setInputText('')
     setIsTyping(true)
 
-    // AI Knowledge Retrieval Logic
     setTimeout(() => {
-      const qLower = query.toLowerCase()
+      const q = query.toLowerCase()
       let reply = ''
-      let matchSlug: string | undefined
-      let matchName: string | undefined
+      let suggestedSlug: string | undefined
+      let suggestedName: string | undefined
 
-      if (qLower.includes('pacman') || qLower.includes('sừng')) {
-        reply = '🐸 Về dòng Ếch Pacman (Ceratophrys cranwelli):\n' +
-          '• Thức ăn: Cá trâm, cá chép mồi, dế mèn, gián Dubia, sâu canxi, cám Pac Attack.\n' +
-          '• Lịch ăn: Ếch baby (3-5cm) ăn 2 ngày/lần (1-2 con dế); ếch lớn ăn 5-7 ngày/lần.\n' +
-          '• Môi trường: Bể cạn lót mút xốp ngập 1/3 nước sạch hoặc dớn ẩm, nhiệt độ 24-28°C, độ ẩm 70-80%.\n' +
-          '⚠️ LƯU Ý CỐT LÕI: Tuyệt đối nuôi riêng từng con vì chúng sẽ đớp nuốt đồng loại; không dùng sỏi dăm nhỏ lót nền.'
-        matchSlug = 'pacman-green'
-        matchName = 'Ếch Pacman Xanh'
-      } else if (qLower.includes('mới') || qLower.includes('dễ') || qLower.includes('bắt đầu')) {
-        reply = '🌱 Đối với người mới nuôi lần đầu, Frog Store khuyên bạn nên chọn 3 loài "trâu bò" và dễ chăm nhất:\n' +
-          '1. Ếch Pacman (Green/Albino): Háu ăn, ngồi một chỗ, hộp nuôi nhỏ gọn tiết kiệm diện tích.\n' +
-          '2. Ếch Cây Lùn Úc (White\'s Tree / Dumpy): Cực kỳ dạn dĩ, có thể ngồi chơi ngoan trên tay, ăn khỏe.\n' +
-          '3. Cóc Tía Rừng Bụng Đỏ: Thích bơi lội, thích nghi khí hậu Việt Nam cực tốt, nuôi được theo bầy đàn đông vui.'
-        matchSlug = 'tree-whites-dumpy'
-        matchName = 'Ếch Cây Lùn Úc (Dumpy)'
-      } else if (qLower.includes('phi tiêu') || qLower.includes('độc') || qLower.includes('nguy hiểm')) {
-        reply = '💎 Về Độc Tính Sinh Học & Pháp Lý Ếch Phi Tiêu (Dendrobatidae / Phyllobates):\n' +
-          '• Cơ chế độc tính: Theo nghiên cứu sinh học lưỡng cư (L.A. Zoo), ếch phi tiêu ngoài tự nhiên tích tụ độc tố alkaloid qua khẩu phần kiến rừng và bọ cánh cứng bản địa. Khi nuôi sinh sản nhân tạo (Captive-Bred - CB), do thức ăn chỉ là ruồi giấm nuôi và dế mèn không chứa alkaloid, cá thể không tự tổng hợp được độc tố.\n' +
-          '• Nguồn gốc & CITES: Các loài thuộc chi Dendrobates, Phyllobates được kiểm soát theo CITES Phụ lục II. 100% cá thể tại Frog Store có nguồn gốc trại nuôi nhân tạo CB hợp pháp, có giấy tờ kiểm dịch và tuân thủ quy định pháp luật.\n' +
-          '• An toàn tiếp xúc: Dù lượng độc tố được triệt tiêu ở môi trường nuôi nhốt, bạn vẫn cần đeo găng hoặc rửa tay sạch trước và sau khi chăm sóc, tránh chạm vào niêm mạc mắt/miệng để bảo vệ cả bản thân lẫn màng da thẩm thấu của ếch.'
-        matchSlug = 'dart-azureus'
-        matchName = 'Ếch Phi Tiêu Xanh Azureus'
-      } else if (qLower.includes('cây') || qLower.includes('leo') || qLower.includes('mắt đỏ')) {
-        reply = '🌿 Chuồng nuôi Ếch Cây (Red-Eyed, Dumpy, Snowflake, Amazon Milk):\n' +
-          '• Kiểu bể: Bắt buộc bể đứng (chiều cao tối thiểu 45-60cm), có nhiều cành lũa và cây lá bản rộng để bám ngủ.\n' +
-          '• Vi khí hậu: Nhiệt độ 24-27°C, độ ẩm 75-90%, xịt sương ẩm sáng tối.\n' +
-          '• Ánh sáng: Đèn UVB 2.0 nhẹ nhàng giúp tổng hợp canxi D3 và giữ màu da tươi sáng.'
-        matchSlug = 'tree-red-eyed'
-        matchName = 'Ếch Cây Mắt Đỏ'
-      } else if (qLower.includes('rêu') || qLower.includes('việt nam') || qLower.includes('tam đảo')) {
-        reply = '✨ Ếch Rêu Việt Nam (Theloderma corticale) - Báu vật lưỡng cư Tam Đảo:\n' +
-          '• Ngụy trang hoàn hảo như một tảng rêu đá ẩm ướt nguyên sinh.\n' +
-          '• Yêu cầu: Bể bán cạn (Paludarium) có nước mát (20-25°C), không để nước quá 26°C vào mùa hè.\n' +
-          '• Thức ăn: Dế nhỏ, sâu canxi, gián red runner vào ban đêm.'
-        matchSlug = 'mossy-vietnamese'
-        matchName = 'Ếch Rêu Việt Nam'
-      } else if (qLower.includes('canxi') || qLower.includes('mbd') || qLower.includes('bệnh') || qLower.includes('sức khỏe')) {
-        reply = '🩺 Cẩm nang sức khỏe & Dinh dưỡng vi lượng:\n' +
-          '• Bệnh mềm xương MBD: Do thiếu Canxi và Vitamin D3. Khắc phục bằng cách rắc bột Canxi + D3 lên mồi sống 1-2 lần/tuần.\n' +
-          '• Tắc ruột (Impaction): Cấm tuyệt đối lót sỏi dăm nhỏ hoặc cát hạt thô.\n' +
-          '• Da thẩm thấu: Cấm chạm tay trần dính xà phòng hoặc muối mồ hôi vào da ếch.'
+      if (q.includes('người mới') || q.includes('dễ nuôi') || q.includes('bắt đầu') || q.includes('tập nuôi')) {
+        reply = `🔰 Với người mới bắt đầu (Beginner), Frog Store khuyên nuôi 2 dòng kinh điển sau:\n\n1. 🐸 **Ếch Pacman (Ceratophrys cranwelli):**\n• Cực kỳ dễ chăm, sống cạn, ăn khỏe cám viên hoặc dế/cá mồi.\n• Không cần chuồng lớn, chỉ cần hộp nhựa 30x20cm lót mút xốp hoặc mùn dừa ẩm.\n\n2. 🍃 **Ếch Cây Dumpy (Litoria caerulea):**\n• Tính tình hiền lành, dạn người, có thể leo cành quan sát sinh động.\n• Kháng bệnh rất cao, tuổi thọ lên tới 10-15 năm.`
+        suggestedSlug = 'pacman-green'
+        suggestedName = 'Ếch Pacman Xanh'
+      } else if (q.includes('pacman') || q.includes('thức ăn pacman')) {
+        reply = `🍽️ **Chế độ dinh dưỡng cho Ếch Pacman:**\n• Giai đoạn Baby (3-4cm): Cho ăn 2 ngày/lần. Khẩu phần: Cám Pacman ngâm nở vừa miệng, cá mồi nhỏ hoặc dế ngắt càng sau.\n• Giai đoạn Trưởng thành (>7cm): Cho ăn 4-5 ngày/lần. Thêm trạch nhỏ, gián Dubia, chuột pinky (1 lần/tháng).\n• ⚠️ Lưu ý: Bổ sung bột Canxi + D3 1 lần/tuần để tránh bệnh biến dạng xương MBD!`
+        suggestedSlug = 'pacman-green'
+        suggestedName = 'Ếch Pacman Xanh'
+      } else if (q.includes('độc') || q.includes('phi tiêu') || q.includes('nguy hiểm') || q.includes('poison')) {
+        reply = `🔬 **Về độc tố của Ếch Phi Tiêu Độc (Dendrobatidae):**\n• 100% ếch phi tiêu tại Frog Store là dòng **sinh sản nhân tạo (Captive-Bred)**, tuyệt đối **KHÔNG CÓ ĐỘC**!\n• Ngoài tự nhiên, chúng tích lũy độc qua việc ăn kiến rừng và bọ cánh cứng bản địa. Khi nuôi sinh sản ăn dế và ruồi giấm không cánh, tuyến độc hoàn toàn vô hại.\n• Tuy nhiên, vì da lưỡng cư rất mỏng manh, bạn nên rửa sạch tay trước và sau khi chăm sóc chuồng trại.`
+        suggestedSlug = 'dart-azureus'
+        suggestedName = 'Ếch Phi Tiêu Xanh Azureus'
+      } else if (q.includes('cây') || q.includes('chuồng') || q.includes('bể') || q.includes('terrarium')) {
+        reply = `🌿 **Setup chuồng nuôi ếch cây chuẩn Terrarium:**\n• Kiểu chuồng: Ưu tiên chiều cao (thể tích tối thiểu 45x45x60cm).\n• Phụ kiện: Cành lũa leo trèo, cây lá rộng (Trầu bà, Lan ý, Bromeliad).\n• Vi khí hậu: Nhiệt độ 24-27°C, độ ẩm 75-90%, xịt sương ẩm sáng tối.\n• Khay nước nông sạch đã khử clo để ếch ngâm mình ban đêm.`
+        suggestedSlug = 'tree-red-eyed'
+        suggestedName = 'Ếch Cây Mắt Đỏ'
+      } else if (q.includes('rêu') || q.includes('việt nam')) {
+        reply = `🌲 **Ếch Rêu Việt Nam (Theloderma corticale):**\n• Loài lưỡng cư bản địa quý hiếm của vùng núi cao Bắc Bộ.\n• Ngụy trang hoàn hảo như một tảng rêu đá ẩm ướt nguyên sinh.\n• Môi trường nuôi: Bán cạn (Paludarium) nước mát 20-24°C, dòng chảy nhẹ và nhiều hốc đá ẩn nấp.`
+        suggestedSlug = 'vietnam-mossy'
+        suggestedName = 'Ếch Rêu Việt Nam'
+      } else if (q.includes('canxi') || q.includes('mbd') || q.includes('bệnh') || q.includes('sức khỏe')) {
+        reply = `🩺 **Cẩm nang sức khỏe & Dinh dưỡng vi lượng:**\n• **Bệnh MBD (Mềm xương):** Do thiếu Canxi/D3 hoặc thiếu đèn UVB. Biểu hiện: hàm dưới xẹp, run chân. Cần bổ sung Canxi D3 phủ lên mồi 1-2 lần/tuần.\n• **Nhiễm trùng da (Red leg):** Do nước bẩn, chuồng ẩm mốc đọng amoniac. Cần thay nước định kỳ 2 ngày/lần bằng nước đã khử clo.\n• **Da thẩm thấu:** Tuyệt đối không chạm tay dính xà phòng hoặc muối mồ hôi trực tiếp vào da ếch.`
       } else {
-        // Search knowledgeBase
-        const found = knowledgeBase.find((k) =>
-          k.name.toLowerCase().includes(qLower) ||
-          k.scientific_name.toLowerCase().includes(qLower) ||
-          k.family.toLowerCase().includes(qLower)
+        const matched = knowledgeBase.find((k) =>
+          query.includes(k.name?.toLowerCase()) ||
+          query.includes(k.species?.toLowerCase()) ||
+          query.includes(k.genus?.toLowerCase())
         )
-        if (found) {
-          reply = `🐸 Thông tin sinh học về ${found.name} (${found.scientific_name}):\n` +
-            `• Phân loại: Họ ${found.family} | Xuất xứ: ${found.origin_region}\n` +
-            `• Môi trường: ${found.habitat_type} | Mức độ nuôi: ${found.difficulty}\n` +
-            `• Giá thị trường: ${new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(found.price)}\n` +
-            `Bạn có thể bấm vào liên kết bên dưới để xem chi tiết cẩm nang chuồng nuôi!`
-          matchSlug = found.slug
-          matchName = found.name
+        if (matched) {
+          reply = `📖 **Thông số sinh học loài ${matched.name}:**\n• Tên khoa học: *${matched.scientific_name}*\n• Môi trường sống: ${matched.natural_habitat || 'Nhiệt đới'}\n• Nhiệt độ thích hợp: ${matched.temp_day_min}°C - ${matched.temp_day_max}°C\n• Độ ẩm tối ưu: ${matched.humidity_min}% - ${matched.humidity_max}%\n• Dinh dưỡng chính: Côn trùng, sâu canxi, dế sạch.\n\nBạn có thể bấm vào liên kết bên dưới để xem hồ sơ và thước đo vi khí hậu chi tiết!`
+          suggestedSlug = matched.slug
+          suggestedName = matched.name
         } else {
-          reply = 'Cảm ơn câu hỏi của bạn! Frog Store cung cấp 26 loài ếch cảnh sống thuần chủng, bảo hành sống 100% khi nhận hàng. Nếu bạn cần hỏi về cách phối trộn thức ăn, kỹ thuật setup bể hoặc hỗ trợ bệnh học khẩn cấp, đừng ngần ngại gọi Hotline / Zalo: 0988.123.456 để được chuyên gia hỗ trợ ngay nhé!'
+          reply = `Cảm ơn câu hỏi của bạn! Frog Store cung cấp 26 loài ếch cảnh thuần dưỡng cùng cẩm nang chăm sóc khoa học. Bạn có thể hỏi mình về:\n• Hướng dẫn setup chuồng & độ ẩm\n• Lịch cho ăn & vi chất Canxi/D3\n• Loài phù hợp cho người mới bắt đầu\n• Hoặc chọn các câu hỏi gợi ý bên dưới nhé! 🐸`
         }
       }
 
@@ -171,8 +154,8 @@ export const FrogAiChatbot: React.FC<FrogAiChatbotProps> = ({
         sender: 'bot',
         text: reply,
         time: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
-        suggestedSlug: matchSlug,
-        suggestedName: matchName
+        suggestedSlug,
+        suggestedName
       }
 
       setMessages((prev) => [...prev, botMsg])
@@ -182,15 +165,18 @@ export const FrogAiChatbot: React.FC<FrogAiChatbotProps> = ({
 
   return (
     <>
-      {/* Floating Action Button (FAB) */}
+      {/* Floating Action Button (FAB) - Compact & Elegant */}
       {!isOpen && (
         <button
-          className="frog-ai-fab" aria-label="Mở Trợ Lý Ếch AI tư vấn sinh học"
-          onClick={() => setIsOpen(true)}
+          className="frog-ai-fab"
+          aria-label="Mở Trợ Lý Ếch AI tư vấn sinh học"
+          onClick={() => {
+            setIsOpen(true)
+            setIsMinimized(false)
+          }}
           title="Mở Trợ Lý Ếch AI tư vấn sinh học"
         >
-          <div className="fab-pulse-ring"></div>
-          <Bot size={22} className="fab-bot-icon" />
+          <Bot size={20} className="fab-bot-icon" />
           <span className="fab-label">Hỏi Trợ Lý Ếch AI</span>
           <span className="fab-online-dot"></span>
         </button>
@@ -198,124 +184,140 @@ export const FrogAiChatbot: React.FC<FrogAiChatbotProps> = ({
 
       {/* Chat Window Panel */}
       {isOpen && (
-        <div className="frog-ai-chat-panel fade-in-up" ref={chatPanelRef}>
+        <div
+          className={`frog-ai-chat-panel fade-in-up ${isMinimized ? 'chat-panel-minimized' : ''}`}
+          ref={chatPanelRef}
+        >
           {/* Header */}
           <div className="chat-panel-header">
             <div className="header-bot-info">
               <div className="bot-avatar-wrap">
-                <Bot size={20} color="#059669" />
+                <Bot size={18} color="#059669" />
                 <span className="bot-status-indicator"></span>
               </div>
               <div>
                 <h4 className="bot-name">Trợ Lý Ếch AI</h4>
-                <p className="bot-status-text">Online • Bách khoa 26 loài ếch</p>
+                <p className="bot-status-text">Online • 26 loài ếch cảnh</p>
               </div>
             </div>
             <div className="header-actions">
               <button
+                type="button"
                 className="btn-chat-icon"
-                onClick={() => setIsOpen(false)}
-                title="Thu nhỏ chatbox"
+                onClick={() => setIsMinimized(!isMinimized)}
+                title={isMinimized ? 'Phóng to khung chat' : 'Thu nhỏ khung chat'}
+                aria-label={isMinimized ? 'Phóng to' : 'Thu nhỏ'}
               >
-                <ChevronDown size={18} />
+                {isMinimized ? <Maximize2 size={15} /> : <Minimize2 size={15} />}
               </button>
               <button
+                type="button"
                 className="btn-chat-icon"
                 onClick={() => setIsOpen(false)}
                 title="Đóng chatbox"
+                aria-label="Đóng"
               >
-                <X size={18} />
+                <X size={16} />
               </button>
             </div>
           </div>
 
-          {/* Messages Body */}
-          <div className="chat-messages-body">
-            {messages.map((m) => (
-              <div
-                key={m.id}
-                className={`chat-bubble-row ${m.sender === 'user' ? 'user-row' : 'bot-row'}`}
-              >
-                {m.sender === 'bot' && (
-                  <div className="bot-mini-avatar">
-                    <Bot size={14} color="#059669" />
+          {/* Collapsible Body */}
+          {!isMinimized && (
+            <>
+              {/* Messages Body */}
+              <div className="chat-messages-body">
+                {messages.map((m) => (
+                  <div
+                    key={m.id}
+                    className={`chat-bubble-row ${m.sender === 'user' ? 'user-row' : 'bot-row'}`}
+                  >
+                    {m.sender === 'bot' && (
+                      <div className="bot-mini-avatar">
+                        <Bot size={13} color="#059669" />
+                      </div>
+                    )}
+                    <div className={`chat-bubble ${m.sender === 'user' ? 'user-bubble' : 'bot-bubble'}`}>
+                      <p style={{ margin: 0, whiteSpace: 'pre-wrap' }}>{m.text}</p>
+                      {m.suggestedSlug && onOpenProduct && (
+                        <button
+                          type="button"
+                          className="btn-chat-product-link"
+                          onClick={() => {
+                            onOpenProduct(m.suggestedSlug!)
+                            setIsOpen(false)
+                          }}
+                        >
+                          <ExternalLink size={12} />
+                          <span>Xem chi tiết {m.suggestedName || 'loài này'}</span>
+                        </button>
+                      )}
+                      <span className="bubble-time">{m.time}</span>
+                    </div>
+                  </div>
+                ))}
+
+                {isTyping && (
+                  <div className="chat-bubble-row bot-row">
+                    <div className="bot-mini-avatar">
+                      <Bot size={13} color="#059669" />
+                    </div>
+                    <div className="chat-bubble bot-bubble typing-bubble">
+                      <span className="typing-dot"></span>
+                      <span className="typing-dot"></span>
+                      <span className="typing-dot"></span>
+                    </div>
                   </div>
                 )}
-                <div className={`chat-bubble ${m.sender === 'user' ? 'user-bubble' : 'bot-bubble'}`}>
-                  <p style={{ margin: 0, whiteSpace: 'pre-wrap' }}>{m.text}</p>
-                  {m.suggestedSlug && onOpenProduct && (
+                <div ref={messagesEndRef} />
+              </div>
+
+              {/* Quick Prompts Multi-line Chips (No overflow cutting) */}
+              <div className="chat-quick-prompts">
+                <div className="prompts-scroll-row">
+                  {quickPrompts.map((p, idx) => (
                     <button
-                      className="btn-chat-product-link"
-                      onClick={() => {
-                        onOpenProduct(m.suggestedSlug!)
-                      }}
+                      key={idx}
+                      type="button"
+                      className="quick-prompt-chip"
+                      onClick={() => handleSend(p.query)}
                     >
-                      <ExternalLink size={13} />
-                      <span>Xem hồ sơ {m.suggestedName || 'loài ếch này'}</span>
+                      {p.label}
                     </button>
-                  )}
-                  <span className="bubble-time">{m.time}</span>
+                  ))}
                 </div>
               </div>
-            ))}
 
-            {isTyping && (
-              <div className="chat-bubble-row bot-row">
-                <div className="bot-mini-avatar">
-                  <Bot size={14} color="#059669" />
-                </div>
-                <div className="chat-bubble bot-bubble typing-bubble">
-                  <span className="typing-dot"></span>
-                  <span className="typing-dot"></span>
-                  <span className="typing-dot"></span>
-                </div>
-              </div>
-            )}
-            <div ref={messagesEndRef} />
-          </div>
-
-          {/* Quick Prompts Carousel */}
-          <div className="chat-quick-prompts">
-            <div className="prompts-scroll-row">
-              {quickPrompts.map((p, idx) => (
+              {/* Input Footer */}
+              <form
+                className="chat-input-bar"
+                onSubmit={(e) => {
+                  e.preventDefault()
+                  handleSend()
+                }}
+              >
+                <input
+                  type="text"
+                  placeholder="Hỏi về thức ăn, nhiệt độ, cách nuôi..."
+                  value={inputText}
+                  onChange={(e) => setInputText(e.target.value)}
+                  className="chat-text-input"
+                  aria-label="Nhập câu hỏi tư vấn về ếch cảnh"
+                />
                 <button
-                  key={idx}
-                  className="quick-prompt-chip"
-                  onClick={() => handleSend(p.query)}
+                  type="submit"
+                  className="btn-chat-send"
+                  disabled={!inputText.trim() || isTyping}
+                  title="Gửi câu hỏi"
+                  aria-label="Gửi"
                 >
-                  {p.label}
+                  <Send size={15} />
                 </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Input Footer */}
-          <form
-            className="chat-input-bar"
-            onSubmit={(e) => {
-              e.preventDefault()
-              handleSend()
-            }}
-          >
-            <input
-              type="text"
-              placeholder="Hỏi về thức ăn, nhiệt độ, cách nuôi..."
-              value={inputText}
-              onChange={(e) => setInputText(e.target.value)}
-              className="chat-text-input" aria-label="Nhập câu hỏi tư vấn về ếch cảnh"
-            />
-            <button
-              type="submit"
-              className="btn-chat-send"
-              disabled={!inputText.trim() || isTyping}
-              title="Gửi câu hỏi"
-            >
-              <Send size={16} />
-            </button>
-          </form>
+              </form>
+            </>
+          )}
         </div>
       )}
     </>
   )
 }
-

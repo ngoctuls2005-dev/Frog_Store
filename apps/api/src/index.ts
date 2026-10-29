@@ -7,7 +7,9 @@ import {
   signJwt,
   verifyJwt,
   getAuthUser,
-  parseGoogleToken,
+  getJwtSecret,
+  verifyGoogleToken,
+  bytesToHex,
   type User,
   type JwtPayload,
 } from './auth'
@@ -493,7 +495,7 @@ app.post('/auth/register', async (c) => {
     email,
     name: user.full_name,
     role: 'customer',
-  })
+  }, getJwtSecret(c.env))
 
   // Nếu có giỏ hàng vãng lai, chuyển vào giỏ user
   const guestKey = guestCartKey(c)
@@ -555,7 +557,7 @@ app.post('/auth/login', async (c) => {
     email: user.email,
     name: user.full_name,
     role: user.role,
-  })
+  }, getJwtSecret(c.env))
 
   // Hợp nhất giỏ hàng (Cart Merge): Nếu khách vãng lai đã thêm hàng, gộp vào giỏ user
   const guestKey = guestCartKey(c)
@@ -580,14 +582,19 @@ app.post('/auth/login', async (c) => {
   return c.json({ success: true, token, user })
 })
 
-// 2.3. Đăng nhập / Đăng ký qua Google
+// 2.3. Đăng nhập / Đăng ký qua Google (Xác minh ID Token chuẩn xác với Google OAuth2 API)
 app.post('/auth/google', async (c) => {
-  const body = await c.req.json<{ credential?: string; idToken?: string; googleId?: string; email?: string; name?: string; avatar?: string }>()
-  const raw = body.credential || body.idToken || (body.googleId && body.email ? JSON.stringify(body) : '')
-  const gUser = parseGoogleToken(raw)
+  const body = await c.req.json<{ credential?: string; idToken?: string }>()
+  const rawCredential = (body.credential || body.idToken || '').trim()
 
+  if (!rawCredential) {
+    return c.json({ error: 'Thiếu mã xác thực Google Credential (ID Token)' }, 400)
+  }
+
+  // Gọi trực tiếp Google OAuth2 TokenInfo API để xác minh tính xác thực và thời hạn token
+  const gUser = await verifyGoogleToken(rawCredential)
   if (!gUser || !gUser.googleId || !gUser.email) {
-    return c.json({ error: 'Thông tin xác thực Google không hợp lệ hoặc thiếu thông tin' }, 400)
+    return c.json({ error: 'Token Google không hợp lệ, đã hết hạn hoặc chưa được xác minh email!' }, 401)
   }
 
   // 1. Tìm user theo google_id
@@ -600,17 +607,26 @@ app.post('/auth/google', async (c) => {
       return c.json({ error: 'Tài khoản của bạn đã bị khóa. Vui lòng liên hệ ban quản trị.' }, 403)
     }
   } else {
-    // 2. Chưa có google_id, tìm xem có email trùng không
+    // 2. Chưa có google_id, tìm xem có tài khoản nào trùng email không
     const userByEmail = await c.env.DB.prepare(
       'SELECT * FROM users WHERE email = ?'
     ).bind(gUser.email).first<any>()
 
     if (userByEmail) {
+      // BẢO MẬT P0: Tuyệt đối không cho phép tự động liên kết tài khoản Admin qua Google Login để tránh Account Takeover!
+      if (userByEmail.role === 'admin') {
+        return c.json({
+          error: 'Tài khoản Quản trị viên (Admin) không được phép liên kết tự động qua Google. Vui lòng đăng nhập bằng mật khẩu quản trị chuẩn.',
+          code: 'ADMIN_MANUAL_LOGIN_REQUIRED'
+        }, 403)
+      }
+
       // Nếu user đã liên kết với Google ID khác -> Báo lỗi xung đột 409
       if (userByEmail.google_id && userByEmail.google_id !== gUser.googleId) {
         return c.json({ error: 'Email này đã được liên kết với một tài khoản Google khác!' }, 409)
       }
-      // Tự động liên kết
+
+      // Tự động liên kết tài khoản khách hàng thông thường
       await c.env.DB.prepare(
         `UPDATE users 
          SET google_id = ?, 
@@ -653,7 +669,7 @@ app.post('/auth/google', async (c) => {
     email: user.email,
     name: user.full_name,
     role: user.role,
-  })
+  }, getJwtSecret(c.env))
 
   // Hợp nhất giỏ hàng nếu có
   const guestKey = guestCartKey(c)
@@ -704,12 +720,20 @@ app.post('/user/link-google', async (c) => {
   const authUser = await getAuthUser(c)
   if (!authUser) return c.json({ error: 'Chưa đăng nhập' }, 401)
 
-  const body = await c.req.json<{ credential?: string; idToken?: string; googleId?: string; email?: string; name?: string; avatar?: string }>()
-  const raw = body.credential || body.idToken || (body.googleId && body.email ? JSON.stringify(body) : '')
-  const gUser = parseGoogleToken(raw)
+  // Chặn Admin liên kết Google để bảo vệ tuyệt đối
+  if (authUser.role === 'admin') {
+    return c.json({ error: 'Tài khoản Quản trị viên không được phép liên kết tài khoản mạng xã hội' }, 403)
+  }
 
+  const body = await c.req.json<{ credential?: string; idToken?: string }>()
+  const rawCredential = (body.credential || body.idToken || '').trim()
+  if (!rawCredential) {
+    return c.json({ error: 'Thiếu mã xác thực Google Credential (ID Token)' }, 400)
+  }
+
+  const gUser = await verifyGoogleToken(rawCredential)
   if (!gUser || !gUser.googleId) {
-    return c.json({ error: 'Thông tin xác thực Google không hợp lệ' }, 400)
+    return c.json({ error: 'Token Google không hợp lệ hoặc đã hết hạn' }, 400)
   }
 
   // 1. Kiểm tra tài khoản hiện tại đã có google_id chưa
@@ -717,19 +741,18 @@ app.post('/user/link-google', async (c) => {
     .bind(authUser.sub)
     .first<any>()
 
-  if (currentUser?.google_id) {
-    return c.json({ error: 'Tài khoản của bạn đã được liên kết với một tài khoản Google rồi!' }, 400)
+  if (!currentUser) return c.json({ error: 'Tài khoản không tồn tại' }, 404)
+  if (currentUser.google_id) {
+    return c.json({ error: 'Tài khoản của bạn đã được liên kết với một tài khoản Google rồi' }, 400)
   }
 
-  // 2. RÀNG BUỘC DUY NHẤT 1-1: Kiểm tra xem googleId này đã bị user KHÁC liên kết chưa
-  const existingGoogleUser = await c.env.DB.prepare('SELECT id, email FROM users WHERE google_id = ?')
+  // 2. Kiểm tra google_id này đã thuộc về user khác chưa
+  const existingGoogle = await c.env.DB.prepare('SELECT id FROM users WHERE google_id = ?')
     .bind(gUser.googleId)
     .first<any>()
 
-  if (existingGoogleUser) {
-    return c.json({
-      error: 'Tài khoản Google này đã được liên kết với một tài khoản Frog Store khác! Không cho phép liên kết 1 tài khoản Google cho nhiều tài khoản.',
-    }, 409)
+  if (existingGoogle) {
+    return c.json({ error: 'Tài khoản Google này đã được liên kết với một tài khoản Frog Store khác' }, 409)
   }
 
   // 3. Tiến hành liên kết
@@ -741,15 +764,7 @@ app.post('/user/link-google', async (c) => {
      WHERE id = ?`
   ).bind(gUser.googleId, gUser.avatar, authUser.sub).run()
 
-  const updatedUser = await c.env.DB.prepare(
-    'SELECT id, email, full_name, phone, address, city, google_id, avatar_url, latitude, longitude, role, status FROM users WHERE id = ?'
-  ).bind(authUser.sub).first<User>()
-
-  return c.json({
-    success: true,
-    message: 'Liên kết tài khoản Google thành công! Từ nay bạn có thể đăng nhập bằng Google.',
-    user: updatedUser,
-  })
+  return c.json({ success: true, message: 'Liên kết tài khoản Google thành công!' })
 })
 
 // Hủy liên kết Google
@@ -918,11 +933,24 @@ app.put('/user/orders/:code/cancel', async (c) => {
     return c.json({ error: 'Chỉ có thể hủy đơn hàng khi shop chưa tiến hành đóng gói thùng xốp' }, 400)
   }
 
-  await c.env.DB.prepare(
-    "UPDATE orders SET status = 'cancelled' WHERE id = ?"
-  ).bind(order.id).run()
+  // P1 STOCK RESTORATION: Lấy các món hàng để hoàn trả lại tồn kho khi hủy đơn
+  const { results: items } = await c.env.DB.prepare(
+    'SELECT product_id, quantity FROM order_items WHERE order_id = ?'
+  ).bind(order.id).all<{ product_id: number; quantity: number }>()
 
-  return c.json({ success: true, message: 'Đã hủy đơn hàng thành công' })
+  const cancelBatch: D1PreparedStatement[] = [
+    c.env.DB.prepare("UPDATE orders SET status = 'cancelled' WHERE id = ?").bind(order.id)
+  ]
+
+  for (const it of items) {
+    cancelBatch.push(
+      c.env.DB.prepare('UPDATE products SET stock = stock + ? WHERE id = ?').bind(it.quantity, it.product_id)
+    )
+  }
+
+  await c.env.DB.batch(cancelBatch)
+
+  return c.json({ success: true, message: 'Đã hủy đơn hàng thành công và hoàn trả số lượng cá thể về kho shop' })
 })
 
 // ==========================================
@@ -1042,9 +1070,22 @@ app.post('/orders', async (c) => {
     return c.json({ error: 'Không tìm thấy sản phẩm trong giỏ' }, 400)
   }
 
-  const rand = Math.floor(100000 + Math.random() * 900000)
-  const orderCode = `FROG-${rand}`
+  // P1 ATOMIC CHECK: Kiểm tra tồn kho trước khi đặt đơn để tránh overselling
+  for (const item of cart.items) {
+    if (item.product.stock < item.qty) {
+      return c.json({
+        error: `Sản phẩm "${item.product.name}" hiện chỉ còn ${item.product.stock} cá thể trong kho, không đủ đáp ứng số lượng ${item.qty} bạn yêu cầu!`,
+        code: 'OUT_OF_STOCK',
+      }, 400)
+    }
+  }
 
+  // P2 SECURE ORDER CODE: Tạo mã đơn an toàn dạng FS- + 8 hex ngẫu nhiên chống brute-force
+  const randBytes = new Uint8Array(4)
+  crypto.getRandomValues(randBytes)
+  const orderCode = `FS-${bytesToHex(randBytes).toUpperCase()}`
+
+  // 1. Tạo đơn hàng chính trong bảng orders
   const orderResult = await c.env.DB.prepare(
     `INSERT INTO orders (
       order_code, user_id, customer_name, customer_phone, customer_address, city,
@@ -1069,24 +1110,30 @@ app.post('/orders', async (c) => {
 
   const orderId = orderResult.meta.last_row_id as number
 
-  const itemInserts = cart.items.map((item) =>
-    c.env.DB.prepare(
-      `INSERT INTO order_items (order_id, product_id, product_name, quantity, unit_price)
-       VALUES (?, ?, ?, ?, ?)`
-    ).bind(orderId, item.product.id, item.product.name, item.qty, item.product.price)
-  )
-  await c.env.DB.batch(itemInserts)
+  // P1 TRANSACTION BATCH: Gộp toàn bộ chi tiết đơn, trừ tồn kho và xóa giỏ vào 1 batch duy nhất
+  const batchStatements: D1PreparedStatement[] = []
 
-  // Trừ tồn kho sản phẩm tương ứng
-  const stockUpdates = cart.items.map((item) =>
-    c.env.DB.prepare(
-      'UPDATE products SET stock = MAX(0, stock - ?) WHERE id = ?'
-    ).bind(item.qty, item.product.id)
-  )
-  await c.env.DB.batch(stockUpdates)
+  for (const item of cart.items) {
+    batchStatements.push(
+      c.env.DB.prepare(
+        `INSERT INTO order_items (order_id, product_id, product_name, quantity, unit_price)
+         VALUES (?, ?, ?, ?, ?)`
+      ).bind(orderId, item.product.id, item.product.name, item.qty, item.product.price)
+    )
 
-  // Xóa giỏ hàng sau khi đặt thành công
-  await c.env.DB.prepare('DELETE FROM user_carts WHERE user_id = ?').bind(authUser.sub).run()
+    batchStatements.push(
+      c.env.DB.prepare(
+        'UPDATE products SET stock = stock - ? WHERE id = ? AND stock >= ?'
+      ).bind(item.qty, item.product.id, item.qty)
+    )
+  }
+
+  // Xóa giỏ hàng của user sau khi đặt
+  batchStatements.push(
+    c.env.DB.prepare('DELETE FROM user_carts WHERE user_id = ?').bind(authUser.sub)
+  )
+
+  await c.env.DB.batch(batchStatements)
 
   // Cập nhật vị trí và thông tin mặc định cho user nếu chưa có
   if (body.latitude !== undefined && body.longitude !== undefined) {
@@ -1183,10 +1230,22 @@ app.get('/orders/:code', async (c) => {
 // 6. ADMIN PORTAL APIS (RBAC PROTECTED)
 // ==========================================
 
-const requireAdmin = async (c: Context): Promise<JwtPayload | null> => {
+const requireAdmin = async (c: Context<Env>): Promise<JwtPayload | null> => {
   const user = await getAuthUser(c)
-  if (!user) return null
-  if (user.role !== 'admin') return null
+  if (!user || user.role !== 'admin') return null
+
+  // P0 RBAC Verification: Luôn double-check quyền Admin trực tiếp trong database D1
+  try {
+    const dbUser = await c.env.DB.prepare('SELECT role, status FROM users WHERE id = ?')
+      .bind(user.sub)
+      .first<{ role: string; status: string }>()
+    if (!dbUser || dbUser.role !== 'admin' || dbUser.status !== 'active') {
+      return null
+    }
+  } catch (err) {
+    console.error('requireAdmin DB check failed:', err)
+    return null
+  }
   return user
 }
 
@@ -1413,6 +1472,29 @@ app.put('/admin/orders/:id/status', async (c) => {
   const allowed = ['pending', 'confirmed', 'packing', 'shipping', 'completed', 'cancelled']
   if (!allowed.includes(status)) {
     return c.json({ error: 'Trạng thái đơn hàng không hợp lệ' }, 400)
+  }
+
+  const currentOrder = await c.env.DB.prepare('SELECT status FROM orders WHERE id = ?').bind(id).first<any>()
+  if (!currentOrder) {
+    return c.json({ error: 'Không tìm thấy đơn hàng' }, 404)
+  }
+
+  // P1 STOCK RESTORATION: Nếu Admin chuyển trạng thái sang cancelled từ một trạng thái khác, hoàn trả lại tồn kho
+  if (status === 'cancelled' && currentOrder.status !== 'cancelled') {
+    const { results: items } = await c.env.DB.prepare(
+      'SELECT product_id, quantity FROM order_items WHERE order_id = ?'
+    ).bind(id).all<{ product_id: number; quantity: number }>()
+
+    const batch: D1PreparedStatement[] = [
+      c.env.DB.prepare('UPDATE orders SET status = ? WHERE id = ?').bind(status, id)
+    ]
+    for (const it of items) {
+      batch.push(
+        c.env.DB.prepare('UPDATE products SET stock = stock + ? WHERE id = ?').bind(it.quantity, it.product_id)
+      )
+    }
+    await c.env.DB.batch(batch)
+    return c.json({ success: true, message: `Đã hủy đơn hàng #${id} và hoàn trả ${items.length} mặt hàng về tồn kho` })
   }
 
   await c.env.DB.prepare('UPDATE orders SET status = ? WHERE id = ?').bind(status, id).run()
