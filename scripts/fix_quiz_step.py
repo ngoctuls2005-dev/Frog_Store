@@ -15,3 +15,4 @@ with open(app_path, 'w', encoding='utf-8') as f:
     f.write(c)
 
 print("SUCCESS: Quiz step fixed!")
+

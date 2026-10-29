@@ -106,6 +106,7 @@ export default function App() {
   const [activePolicy, setActivePolicy] = useState<PolicyType>('privacy')
   const [cartOpen, setCartOpen] = useState(false)
   const [checkoutOpen, setCheckoutOpen] = useState(false)
+  const [pendingCheckout, setPendingCheckout] = useState(false)
   const [trackOpen, setTrackOpen] = useState(false)
   const [trackCode, setTrackCode] = useState('')
   const [trackedOrder, setTrackedOrder] = useState<OrderDetail | null>(null)
@@ -315,6 +316,10 @@ export default function App() {
         longitude: res.user.longitude || undefined,
       }))
       showToast(`Đăng nhập thành công! Chào mừng ${res.user.full_name || res.user.email}`)
+      if (pendingCheckout) {
+        setPendingCheckout(false)
+        setCheckoutOpen(true)
+      }
     } catch (err: any) {
       setAuthError(err.message || 'Đăng nhập không thành công!')
       showToast(err.message || 'Đăng nhập không thành công!', 'error')
@@ -352,6 +357,10 @@ export default function App() {
         customerAddress: res.user.address || prev.customerAddress,
       }))
       showToast('Đăng ký tài khoản Frog Store thành công!')
+      if (pendingCheckout) {
+        setPendingCheckout(false)
+        setCheckoutOpen(true)
+      }
     } catch (err: any) {
       setAuthError(err.message || 'Đăng ký không thành công!')
       showToast(err.message || 'Đăng ký không thành công!', 'error')
@@ -378,6 +387,10 @@ export default function App() {
       setAuthOpen(false)
       const updatedCart = await api.cart()
       setCart(updatedCart)
+      if (pendingCheckout) {
+        setPendingCheckout(false)
+        setCheckoutOpen(true)
+      }
       setCheckoutForm((prev) => ({
         ...prev,
         customerName: res.user.full_name || prev.customerName,
@@ -551,9 +564,8 @@ export default function App() {
 
       {/* 1. Announcement Bar */}
       <div className="announcement-bar">
-        <span>🐸 FROG STORE VIỆT NAM — Shop ếch cảnh sống chuyên nghiệp & uy tín</span>
-        <span>📦 Bảo hành sống 100% khi nhận hàng — Đóng thùng xốp lót rêu giữ ẩm</span>
-        <span>📞 Hotline Zalo kỹ thuật: 0988.123.456</span>
+        <span>🐸 FROG STORE VIỆT NAM — Bách khoa & Cung cấp 26 loài ếch cảnh sống thuần chủng</span>
+        <span>📞 Tư vấn kỹ thuật & Đặt hàng nhanh: 0988.123.456</span>
       </div>
 
       {/* 2. Top Navigation */}
@@ -645,42 +657,44 @@ export default function App() {
         </div>
       </header>
 
-      {/* 3. Hero Banner */}
-      <section className="hero">
-        <div className="hero-content">
-          <div className="hero-pill">
-            <Sparkles size={16} />
-            <span>Thế Giới Lưỡng Cư Nhập Khẩu & Nhân Giống Thuần</span>
-          </div>
-          <h2>THẾ GIỚI ẾCH CẢNH SỐNG ĐẲNG CẤP</h2>
-          <p>
-            Chuyên cung cấp các dòng ếch cảnh Pacman, Ếch Cây, Ếch Phi Tiêu Độc và các loài lưỡng cư
-            quý hiếm. Chuẩn giống 100%, thuần ăn mồi, giá thị trường chuẩn và tư vấn trọn đời.
-          </p>
+      {/* 3. Hero Banner (Chỉ hiển thị tại trang chủ, không lặp lại ở trang chi tiết) */}
+      {!activeDetailSlug && (
+        <section className="hero">
+          <div className="hero-content">
+            <div className="hero-pill">
+              <Sparkles size={16} />
+              <span>Thế Giới Lưỡng Cư Nhập Khẩu & Nhân Giống Thuần</span>
+            </div>
+            <h2>THẾ GIỚI ẾCH CẢNH SỐNG ĐẲNG CẤP</h2>
+            <p>
+              Chuyên cung cấp các dòng ếch cảnh Pacman, Ếch Cây, Ếch Phi Tiêu Độc và các loài lưỡng cư
+              quý hiếm. Chuẩn giống 100%, thuần ăn mồi, giá thị trường chuẩn và tư vấn trọn đời.
+            </p>
 
-          <div className="hero-features">
-            <div className="feature-tag">
-              <ShieldCheck size={18} color="#4ade80" />
-              <span>Bảo hành sống 100% khi nhận hàng</span>
+            <div className="hero-features">
+              <div className="feature-tag">
+                <ShieldCheck size={18} color="#4ade80" />
+                <span>Bảo hành sống 100% khi nhận hàng</span>
+              </div>
+              <div className="feature-tag">
+                <Truck size={18} color="#60a5fa" />
+                <span>Thùng xốp giữ ẩm giao hỏa tốc toàn quốc</span>
+              </div>
+              <div className="feature-tag">
+                <HeartPulse size={18} color="#f472b6" />
+                <span>Đã thuần cám & mồi, ăn khỏe không tật lỗi</span>
+              </div>
             </div>
-            <div className="feature-tag">
-              <Truck size={18} color="#60a5fa" />
-              <span>Thùng xốp giữ ẩm giao hỏa tốc toàn quốc</span>
-            </div>
-            <div className="feature-tag">
-              <HeartPulse size={18} color="#f472b6" />
-              <span>Đã thuần cám & mồi, ăn khỏe không tật lỗi</span>
-            </div>
-          </div>
 
-          <div style={{ marginTop: 20 }}>
-            <button className="btn-hero-quiz" onClick={handleStartQuiz}>
-              <Sparkles size={18} />
-              <span>🎯 Trợ Thủ Tìm Ếch Phù Hợp (Quiz 30 Giây)</span>
-            </button>
+            <div style={{ marginTop: 20 }}>
+              <button className="btn-hero-quiz" onClick={handleStartQuiz}>
+                <Sparkles size={18} />
+                <span>🎯 Trợ Thủ Tìm Ếch Phù Hợp (Quiz 30 Giây)</span>
+              </button>
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       {/* 4. Main Products Area OR Dedicated Detail View */}
       {activeDetailSlug ? (
@@ -697,7 +711,13 @@ export default function App() {
           }}
           onBuyNow={(pid, qty) => {
             runCart(api.add(pid, qty || 1))
-            setCheckoutOpen(true)
+            if (!currentUser) {
+              setPendingCheckout(true)
+              setAuthOpen(true)
+              showToast('Vui lòng đăng nhập hoặc đăng ký để kích hoạt gói Bảo Hành Sống 100%!', 'info')
+            } else {
+              setCheckoutOpen(true)
+            }
           }}
           onToast={showToast}
         />
@@ -709,25 +729,34 @@ export default function App() {
           <section className="filter-section">
             {/* Category Tabs */}
             <div className="category-tabs">
-              <button
-                className={`tab-btn ${selectedCat === 'all' ? 'active' : ''}`}
-                onClick={() => handleCategoryChange('all')}
-              >
-                <span>🌿 Tất cả loài</span>
-                <span className="tab-count">{products.length}</span>
-              </button>
-              {categories.map((cat) => (
-                <button
-                  key={cat.id}
-                  className={`tab-btn ${selectedCat === cat.slug ? 'active' : ''}`}
-                  onClick={() => handleCategoryChange(cat.slug)}
-                >
-                  <span>{cat.icon} {cat.name}</span>
-                  {cat.product_count !== undefined && (
-                    <span className="tab-count">{cat.product_count}</span>
-                  )}
-                </button>
-              ))}
+              {(() => {
+                const totalCatalogCount = categories.reduce((sum, c) => sum + (c.product_count || 0), 0) || 26
+                return (
+                  <>
+                    <button
+                      className={`tab-btn ${selectedCat === 'all' ? 'active' : ''}`}
+                      onClick={() => handleCategoryChange('all')}
+                      title="Xem toàn bộ bách khoa ếch cảnh"
+                    >
+                      <span>🌿 Tất cả loài</span>
+                      <span className="tab-count" title="Tổng số loài trong bách khoa">{totalCatalogCount} loài</span>
+                    </button>
+                    {categories.map((cat) => (
+                      <button
+                        key={cat.id}
+                        className={`tab-btn ${selectedCat === cat.slug ? 'active' : ''}`}
+                        onClick={() => handleCategoryChange(cat.slug)}
+                        title={`Xem các loài họ ${cat.name}`}
+                      >
+                        <span>{cat.icon} {cat.name}</span>
+                        {cat.product_count !== undefined && (
+                          <span className="tab-count" title={`Tổng số loài trong phân loại ${cat.name}`}>{cat.product_count} loài</span>
+                        )}
+                      </button>
+                    ))}
+                  </>
+                )
+              })()}
             </div>
 
             {/* Secondary Controls Bar */}
@@ -829,7 +858,16 @@ export default function App() {
               </button>
             </div>
           ) : (
-            <div className="grid">
+            <>
+              {search && (
+                <div className="search-feedback-bar">
+                  <span>🔍 Kết quả tìm kiếm cho: "<strong>{search}</strong>" — Tìm thấy <strong>{products.length} loài ếch</strong></span>
+                  <button className="btn-clear-search-pill" onClick={() => handleSearchChange('')} title="Xem lại tất cả loài ếch">
+                    <X size={14} /> Xóa tìm kiếm
+                  </button>
+                </div>
+              )}
+              <div className={`grid ${products.length <= 2 ? 'grid-few' : ''}`}>
               {products.map((p) => (
                 <article className="card" key={p.id}>
                   <div
@@ -911,6 +949,7 @@ export default function App() {
                 </article>
               ))}
             </div>
+            </>
           )}
         </main>
       )}
@@ -973,6 +1012,7 @@ export default function App() {
                   className="btn-lock-auth"
                   onClick={() => {
                     setCartOpen(false)
+                    setPendingCheckout(true)
                     setAuthOpen(true)
                   }}
                 >

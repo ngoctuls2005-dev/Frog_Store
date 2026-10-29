@@ -78,3 +78,4 @@ with open(app_path, 'w', encoding='utf-8') as f:
     f.write(code)
 
 print("SUCCESS: App.tsx patched with PolicyModal & Footer links!")
+

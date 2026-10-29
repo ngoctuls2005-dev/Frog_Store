@@ -87,3 +87,4 @@ with open(path, "w", encoding="utf-8") as f:
     f.write(norm_content)
 
 print("Updated apps/api/src/index.ts successfully!")
+

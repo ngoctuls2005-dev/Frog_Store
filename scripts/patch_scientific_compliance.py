@@ -45,3 +45,4 @@ if old_detail_toxicity in detail_code:
     print("FrogDetailPage.tsx updated with scientific accuracy & CITES compliance!")
 else:
     print("WARNING: old_detail_toxicity not found in FrogDetailPage.tsx")
+
