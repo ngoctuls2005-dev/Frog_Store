@@ -250,6 +250,25 @@ export default function App() {
     fetchFilteredProducts('all', 'all', 'all', '', 'featured', 'all')
   }
 
+  // Chuyển hướng về trang chủ tức thì khi bấm Logo Frog Store
+  const handleGoHome = () => {
+    if (window.location.hash && window.location.hash !== '#/') {
+      window.location.hash = '#/'
+    }
+    setActiveDetailSlug(null)
+    setTrackOpen(false)
+    setMyOrdersOpen(false)
+    setProfileOpen(false)
+    setAdminPortalOpen(false)
+    setQuizOpen(false)
+    setAuthOpen(false)
+    setCartOpen(false)
+    setCheckoutOpen(false)
+    setPolicyOpen(false)
+    resetFilters()
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
   // Quiz Handlers
   const handleStartQuiz = () => {
     setQuizStep(1)
@@ -570,11 +589,24 @@ export default function App() {
 
       {/* 2. Top Navigation */}
       <header className="topbar">
-        <div className="brand" onClick={resetFilters}>
+        <div
+          className="brand"
+          onClick={handleGoHome}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault()
+              handleGoHome()
+            }
+          }}
+          role="button"
+          tabIndex={0}
+          aria-label="Về trang chủ Frog Store"
+          title="Về trang chủ Frog Store"
+        >
           <span className="brand-icon">🐸</span>
           <div className="brand-text">
             <h1>FROG STORE</h1>
-            <p>Ếch Cảnh Sống & Bán Cạn</p>
+            <p>Ếch Cảnh Sống &amp; Bán Cạn</p>
           </div>
         </div>
 
@@ -879,7 +911,7 @@ export default function App() {
                     style={{ cursor: 'pointer' }}
                     title={`Xem chi tiết hồ sơ ${p.name}`}
                   >
-                    <img src={p.image} alt={p.name} loading="lazy" />
+                    <img src={p.image} alt={p.name} loading="lazy" decoding="async" width="300" height="225" />
                     <span className={getDiffBadgeClass(p.difficulty)}>
                       {p.difficulty}
                     </span>

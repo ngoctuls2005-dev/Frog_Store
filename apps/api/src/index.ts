@@ -1486,16 +1486,42 @@ root.use('*', async (c, next) => {
 // 3. Mount API router tại /api
 root.route('/api', app)
 
-// 4. Fallback phục vụ Static Assets & SPA frontend
+// 4. Fallback phục vụ Static Assets & SPA frontend với High-Performance Caching
 root.all('*', async (c) => {
   if (c.env.ASSETS) {
     try {
-      const res = await c.env.ASSETS.fetch(c.req.raw)
-      if (res.status === 404 && !c.req.path.startsWith('/api')) {
+      let res = await c.env.ASSETS.fetch(c.req.raw)
+      const path = c.req.path
+
+      if (res.status === 404 && !path.startsWith('/api')) {
         // SPA Fallback: serve /index.html if route not found
         const indexReq = new Request(new URL('/', c.req.url).toString(), c.req.raw)
-        return await c.env.ASSETS.fetch(indexReq)
+        res = await c.env.ASSETS.fetch(indexReq)
       }
+
+      if (res.ok) {
+        const newHeaders = new Headers(res.headers)
+
+        // 1. Immutable Long-term cache cho Vite bundle assets có hash (/assets/index-*.js, .css)
+        if (path.startsWith('/assets/')) {
+          newHeaders.set('Cache-Control', 'public, max-age=31536000, immutable')
+        }
+        // 2. Cache 30 ngày cho ảnh sản phẩm và static images
+        else if (path.startsWith('/images/') || /\.(jpg|jpeg|png|webp|svg|ico|gif)$/i.test(path)) {
+          newHeaders.set('Cache-Control', 'public, max-age=2592000, stale-while-revalidate=86400')
+        }
+        // 3. SPA index.html: kiểm tra revalidate nhanh để người dùng luôn nhận bản cập nhật mới nhất
+        else if (path === '/' || path.endsWith('.html')) {
+          newHeaders.set('Cache-Control', 'public, max-age=0, must-revalidate')
+        }
+
+        return new Response(res.body, {
+          status: res.status,
+          statusText: res.statusText,
+          headers: newHeaders,
+        })
+      }
+
       return res
     } catch (e: any) {
       return c.text(`Asset fetch error: ${e?.message || e}`, 500)

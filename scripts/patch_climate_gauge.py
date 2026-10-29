@@ -110,3 +110,4 @@ with open(path, "w", encoding="utf-8") as f:
     f.write(norm_content)
 
 print("SUCCESS: Updated climate gauge in FrogDetailPage.tsx!")
+

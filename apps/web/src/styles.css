@@ -3716,3 +3716,28 @@ footer {
     text-align: center;
   }
 }
+
+/* Interactive Brand Logo Navigation */
+.brand {
+  cursor: pointer !important;
+  user-select: none;
+  transition: opacity 0.2s ease, transform 0.15s ease;
+  outline-offset: 4px;
+}
+
+.brand:hover {
+  opacity: 0.94;
+}
+
+.brand:hover .brand-icon {
+  transform: scale(1.15) rotate(-6deg);
+}
+
+.brand:active {
+  transform: scale(0.97);
+}
+
+.brand-icon {
+  display: inline-block;
+  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+}

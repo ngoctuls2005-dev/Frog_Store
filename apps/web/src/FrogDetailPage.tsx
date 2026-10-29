@@ -135,7 +135,7 @@ export const FrogDetailPage: React.FC<FrogDetailPageProps> = ({
         {/* Left: Interactive Image Gallery */}
         <div className="detail-gallery-card">
           <div className="main-image-viewport">
-            <img src={activeImage || product.image} alt={product.name} className="hero-frog-img" />
+            <img src={activeImage || product.image} alt={product.name} className="hero-frog-img" decoding="async" fetchPriority="high" width="600" height="450" />
             <div className="guarantee-float-badge">
               <ShieldCheck size={16} /> Bảo Hành Sống 100%
             </div>
@@ -153,7 +153,7 @@ export const FrogDetailPage: React.FC<FrogDetailPageProps> = ({
                   className={`thumb-btn ${activeImage === imgUrl ? 'active' : ''}`}
                   onClick={() => setActiveImage(imgUrl)}
                 >
-                  <img src={imgUrl} alt={`${product.name} góc ${idx + 1}`} />
+                  <img src={imgUrl} alt={`${product.name} góc ${idx + 1}`} loading="lazy" decoding="async" width="80" height="60" />
                 </button>
               ))}
             </div>
@@ -497,7 +497,7 @@ export const FrogDetailPage: React.FC<FrogDetailPageProps> = ({
       {/* 5. Sticky Bottom Mobile Bar */}
       <div className="sticky-mobile-buy-bar">
         <div className="sticky-bar-left">
-          <img src={product.image} alt={product.name} className="sticky-bar-thumb" />
+          <img src={product.image} alt={product.name} className="sticky-bar-thumb" loading="lazy" decoding="async" width="44" height="44" />
           <div className="sticky-bar-text">
             <span className="sticky-bar-name">{product.name}</span>
             <span className="sticky-bar-price">{vnd(product.price)}</span>
